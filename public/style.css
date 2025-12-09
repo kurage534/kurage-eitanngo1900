@@ -1,0 +1,74 @@
+body {
+  font-family: sans-serif;
+  max-width: 400px;
+  margin: 2em auto;
+  background: #f5f5fa;
+  padding: 2em;
+  border-radius: 1em;
+  box-shadow: 0 0 8px #ccc;
+}
+h1, h2 {
+  text-align: center;
+}
+nav {
+  text-align: center;
+  margin-bottom: 2em;
+}
+.btn {
+  display: inline-block;
+  padding: 0.5em 1em;
+  background: #007bff;
+  color: #fff;
+  border-radius: 0.3em;
+  text-decoration: none;
+  margin: 0 0.5em 1em 0.5em;
+  transition: background 0.2s;
+}
+.btn:hover {
+  background: #0056b3;
+}
+#ranking-container {
+  margin-bottom: 2em;
+}
+#ranking-list {
+  padding-left: 1.5em;
+}
+#submit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  margin-bottom: 1em;
+}
+#name, #score, #answer {
+  padding: 0.5em;
+  font-size: 1em;
+}
+button {
+  padding: 0.5em;
+  font-size: 1em;
+  cursor: pointer;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 0.3em;
+  transition: background 0.2s;
+}
+button:hover {
+  background: #0056b3;
+}
+#reset-btn {
+  background: #dc3545;
+}
+#reset-btn:hover {
+  background: #b52d3a;
+}
+#result-message, #reset-message, #game-message {
+  text-align: center;
+  min-height: 1.5em;
+  margin-top: 0.5em;
+}
+#score-area {
+  text-align: center;
+  margin-top: 1em;
+  font-size: 1.2em;
+}

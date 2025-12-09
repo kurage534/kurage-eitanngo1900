@@ -1,0 +1,14 @@
+{
+  "name": "eitanngo-ranking-server",
+  "version": "1.0.0",
+  "description": "英単語ゲーム＋ランキングサーバー（MongoDB不要）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "csv-parse": "^6.1.0",
+    "express": "^4.22.1"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>英単語ランキング</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>ランキング</h1>
+  <div id="ranking-container">
+    <ol id="ranking-list"></ol>
+  </div>
+  <h2>スコア送信</h2>
+  <form id="submit-form">
+    <input type="text" id="name" placeholder="名前" required>
+    <input type="number" id="score" placeholder="スコア" required>
+    <button type="submit">送信</button>
+  </form>
+  <div id="result-message"></div>
+  <button id="reset-btn" style="background:#dc3545;margin-top:2em;">ランキングリセット</button>
+  <span id="reset-message" style="margin-left:1em;color:#dc3545;"></span>
+  <a href="index.html">トップに戻る</a>
+  <script src="ranking.js"></script>
+</body>
+</html>
