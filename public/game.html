@@ -3,11 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <title>英単語ゲーム</title>
+
+  <!-- スマホ対応 -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
   <h1>英単語ゲーム</h1>
+
   <div id="setup-area">
     <label for="qcount">出題数：</label>
     <select id="qcount">
@@ -17,17 +22,27 @@
       <option value="20">20問</option>
       <option value="all">全問</option>
     </select>
+
     <button id="start-btn">ゲーム開始</button>
   </div>
+
   <div id="game-area" style="display:none;">
     <p id="question"></p>
+
     <input type="text" id="answer" placeholder="答えを入力">
     <button id="submit-answer">送信</button>
+
     <div id="game-message"></div>
     <div id="score-area"></div>
+
+    <!-- ★次へボタン -->
+    <button id="next-btn" style="display:none;">次へ</button>
+
     <button id="to-ranking" style="display:none;">ランキングへ登録</button>
   </div>
+
   <a href="index.html">トップに戻る</a>
+
   <script src="game.js"></script>
 </body>
 </html>
