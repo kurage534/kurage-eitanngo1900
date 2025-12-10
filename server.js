@@ -1,73 +1,82 @@
+// server.js ーーー DB版ランキング保存 完全版
+
 const express = require('express');
-const fs = require('fs').promises;
 const path = require('path');
+const fs = require('fs').promises;
+const { Pool } = require('pg');
 const { parse } = require('csv-parse/sync');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'ranking.json');
-const ADMIN_PASS = "Kurage0805"; // 管理パスワード
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 英単語リストAPI（BOM自動除去！）
+// ========== DB接続 ==========
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+// ========== ランキングテーブル自動生成 ==========
+async function ensureTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ranking(
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      score INTEGER,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+}
+ensureTable();
+
+// ========== 単語取得 ==========
 app.get('/api/words', async (req, res) => {
   try {
-    let csvFile = await fs.readFile(path.join(__dirname, 'words.csv'), 'utf-8');
+    let csvFile = await fs.readFile(path.join(__dirname,'words.csv'),'utf-8');
     if (csvFile.charCodeAt(0) === 0xFEFF) csvFile = csvFile.slice(1);
-    const records = parse(csvFile, {
-      columns: true,
-      skip_empty_lines: true
-    });
+    const records = parse(csvFile, { columns:true, skip_empty_lines:true });
     res.json(records);
-  } catch (e) {
-    res.status(500).json({ error: '単語リスト読み込みエラー' });
-  }
-});
-
-// ランキングAPI
-app.get('/api/ranking', async (req, res) => {
-  try {
-    let data = [];
-    try {
-      const file = await fs.readFile(DATA_FILE, 'utf-8');
-      data = JSON.parse(file);
-    } catch (e) {}
-    data.sort((a, b) => b.score - a.score);
-    res.json(data.slice(0, 10));
   } catch {
-    res.status(500).json({ error: '読み込みエラー' });
+    res.status(500).json({ error:'単語リスト読み込みエラー' });
   }
 });
 
-// ランキング送信API（スコアはPOSTでのみ！）
+// ========== ランキング送信 API ==========
 app.post('/api/submit', async (req, res) => {
   const { name, score } = req.body;
-  if (!name || typeof score !== 'number') {
-    return res.status(400).json({ error: 'nameとscoreを正しく指定してください' });
-  }
-  let data = [];
   try {
-    const file = await fs.readFile(DATA_FILE, 'utf-8');
-    data = JSON.parse(file);
-  } catch (e) {}
-  data.push({ name, score, date: new Date().toISOString() });
-  await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
-  res.json({ result: 'ok' });
+    await pool.query(
+      `INSERT INTO ranking(name, score) VALUES($1,$2)`,
+      [name, score]
+    );
+    res.json({ result:'ok' });
+  } catch {
+    res.status(500).json({error:'DB保存エラー'});
+  }
 });
 
-// ランキングリセットAPI（パスワード認証）
-app.post('/api/reset', async (req, res) => {
-  const password = req.body.password || '';
-  if (password !== ADMIN_PASS) {
-    // 不正時は403で必ずエラー
-    return res.status(403).json({ error: 'リセットパスワードが違います' });
+// ========== ランキング取得 ==========
+app.get('/api/ranking', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM ranking ORDER BY score DESC, id ASC LIMIT 50`
+    );
+    res.json(result.rows);
+  } catch {
+    res.status(500).json({error:'DB取得エラー'});
   }
-  await fs.writeFile(DATA_FILE, '[]');
-  res.json({ result: 'reset ok' });
+});
+
+// ========== 管理用リセット（任意） ==========
+app.post('/api/reset', async (req, res) => {
+  const pass = req.body.password || '';
+  if (pass !== 'Kurage0805') return res.status(403).json({error:'NG'});
+  await pool.query('DELETE FROM ranking');
+  res.json({ result:'reset ok' });
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log('server on ' + PORT);
 });
