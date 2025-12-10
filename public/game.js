@@ -78,7 +78,7 @@ document.getElementById('submit-answer').addEventListener('click', () => {
       `不正解... 正しい答えは "${questions[current].word}"`;
   }
   current++;
-  setTimeout(showQuestion, 700);
+  setTimeout(showQuestion, 2000);
 });
 
 // ランキング遷移
@@ -88,4 +88,5 @@ document.getElementById('to-ranking').addEventListener('click', () => {
 });
 
 // 最初に全問題ロード
+
 window.addEventListener('DOMContentLoaded', loadAllQuestions);
