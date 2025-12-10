@@ -2,27 +2,48 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>英単語ランキング</title>
+  <title>ランキング</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>ランキング</h1>
-  <div id="ranking-container">
-    <ol id="ranking-list"></ol>
+
+  <div>
+    <p>名前を入力して登録できます👇</p>
+    <input id="name" placeholder="名前">
+    <button id="send">ランキングに送信</button>
   </div>
-  <h2>スコア送信</h2>
-  <form id="submit-form">
-    <input type="text" id="name" placeholder="名前" required>
-    <input type="number" id="score" placeholder="スコア" required readonly>
-    <button type="submit">送信</button>
-  </form>
-  <div id="result-message"></div>
-  <h2>ランキングリセット</h2>
-  <input type="password" id="reset-pass" placeholder="リセット用パスワード">
-  <button id="reset-btn" style="background:#dc3545;margin-top:2em;">ランキングリセット</button>
-  <span id="reset-message" style="margin-left:1em;color:#dc3545;"></span>
-  <a href="index.html">トップに戻る</a>
-  <script src="ranking.js"></script>
+
+  <h2>上位50位</h2>
+  <div id="list"></div>
+
+  <a href="index.html">TOPへ</a>
+
+  <script>
+    async function load() {
+      const r = await fetch('/api/ranking');
+      const data = await r.json();
+      const list = document.getElementById('list');
+      list.innerHTML = data.map(x =>
+        `${x.name} : ${x.score}`).join('<br>');
+    }
+    load();
+
+    // ランキング送信
+    document.getElementById('send').addEventListener('click', async()=>{
+      const name = document.getElementById('name').value;
+      const score = Number(localStorage.getItem('score')||0);
+
+      await fetch('/api/submit',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name,score})
+      });
+
+      alert('登録しました！');
+      await load();
+    });
+  </script>
 </body>
 </html>
