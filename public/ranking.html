@@ -21,12 +21,13 @@
 <script>
   async function load() {
     const r = await fetch('/api/ranking');
-    const data = await r.json();
+    const d = await r.json();
 
     document.getElementById('list').innerHTML =
-      data.map(x=> `${x.name}：${x.score}点（${x.time ?? "??"} 秒）`)
-          .join("<br>");
+      d.map(x => `${x.name}：${x.score}点（${x.time ?? "??"} 秒）`)
+       .join("<br>");
   }
+
   load();
 
   document.getElementById('send').onclick = async () => {
@@ -36,7 +37,7 @@
 
     await fetch('/api/submit', {
       method:"POST",
-      headers:{ "Content-Type":"application/json" },
+      headers:{"Content-Type":"application/json"},
       body:JSON.stringify({ name, score, time })
     });
 
