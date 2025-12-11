@@ -43,20 +43,20 @@ ensureTable();
 // ===============================================
 app.get('/api/words', async (req, res) => {
   try {
-    let csvFile = await fs.readFile(path.join(__dirname,'words.csv'),'utf-8');
+    let csvFile = await fs.readFile(path.join(__dirname, 'words.csv'), 'utf-8');
 
     if (csvFile.charCodeAt(0) === 0xFEFF) {
       csvFile = csvFile.slice(1);
     }
 
     const records = parse(csvFile, {
-      columns:true,
-      skip_empty_lines:true
+      columns: true,
+      skip_empty_lines: true
     });
 
     res.json(records);
   } catch {
-    res.status(500).json({ error:'単語リスト読み込みエラー' });
+    res.status(500).json({ error: '単語リスト読み込みエラー' });
   }
 });
 
@@ -71,9 +71,9 @@ app.post('/api/submit', async (req, res) => {
       `INSERT INTO ranking(name, score, time) VALUES($1,$2,$3)`,
       [name, score, time || null]
     );
-    res.json({ result:'ok' });
-  } catch {
-    res.status(500).json({ error:'DB保存エラー' });
+    res.json({ result: 'ok' });
+  } catch (e) {
+    res.status(500).json({ error: 'DB保存エラー' });
   }
 });
 
@@ -82,12 +82,14 @@ app.post('/api/submit', async (req, res) => {
 // ===============================================
 app.get('/api/ranking', async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT * FROM ranking ORDER BY score DESC, time ASC NULLS LAST, id ASC LIMIT 50`
-    );
+    const result = await pool.query(`
+      SELECT * FROM ranking
+      ORDER BY score DESC, time ASC NULLS LAST, id ASC
+      LIMIT 50
+    `);
     res.json(result.rows);
   } catch {
-    res.status(500).json({ error:'DB取得エラー' });
+    res.status(500).json({ error: 'DB取得エラー' });
   }
 });
 
@@ -99,14 +101,14 @@ app.post('/api/admin/delete', async (req, res) => {
   const sent = req.headers["x-admin-pass"];
 
   if (sent !== ADMIN_PASS) {
-    return res.status(403).json({ error:"管理者パスワードが違います" });
+    return res.status(403).json({ error: "管理者パスワードが違います" });
   }
 
   try {
     await pool.query(`DELETE FROM ranking`);
-    res.json({ result:"deleted" });
+    res.json({ result: "deleted" });
   } catch {
-    res.status(500).json({ error:"削除エラー" });
+    res.status(500).json({ error: "削除エラー" });
   }
 });
 
