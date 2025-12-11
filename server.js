@@ -24,7 +24,6 @@ const pool = new Pool({
 
 // ===============================================
 // 🔵 ランキングテーブル自動生成
-//     time（クリア時間）にも対応
 // ===============================================
 async function ensureTable() {
   await pool.query(`
@@ -44,26 +43,25 @@ ensureTable();
 // ===============================================
 app.get('/api/words', async (req, res) => {
   try {
-    let csvFile = await fs.readFile(path.join(__dirname, 'words.csv'), 'utf-8');
+    let csvFile = await fs.readFile(path.join(__dirname,'words.csv'),'utf-8');
 
-    // 先頭BOM削除
     if (csvFile.charCodeAt(0) === 0xFEFF) {
       csvFile = csvFile.slice(1);
     }
 
     const records = parse(csvFile, {
-      columns: true,
-      skip_empty_lines: true
+      columns:true,
+      skip_empty_lines:true
     });
 
     res.json(records);
-  } catch (err) {
-    res.status(500).json({ error: '単語リスト読み込みエラー' });
+  } catch {
+    res.status(500).json({ error:'単語リスト読み込みエラー' });
   }
 });
 
 // ===============================================
-// 🔵 ランキング送信 API（time 対応）
+// 🔵 ランキング送信 API
 // ===============================================
 app.post('/api/submit', async (req, res) => {
   const { name, score, time } = req.body;
@@ -73,10 +71,9 @@ app.post('/api/submit', async (req, res) => {
       `INSERT INTO ranking(name, score, time) VALUES($1,$2,$3)`,
       [name, score, time || null]
     );
-    res.json({ result: 'ok' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB保存エラー' });
+    res.json({ result:'ok' });
+  } catch {
+    res.status(500).json({ error:'DB保存エラー' });
   }
 });
 
@@ -85,41 +82,37 @@ app.post('/api/submit', async (req, res) => {
 // ===============================================
 app.get('/api/ranking', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT * FROM ranking
-      ORDER BY score DESC, time ASC, id ASC
-      LIMIT 50
-    `);
+    const result = await pool.query(
+      `SELECT * FROM ranking ORDER BY score DESC, time ASC NULLS LAST, id ASC LIMIT 50`
+    );
     res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: 'DB取得エラー' });
+  } catch {
+    res.status(500).json({ error:'DB取得エラー' });
   }
 });
 
 // ===============================================
 // 🔴 管理者専用：ランキング削除 API
-//      パスワード必須 → 管理者しか使えない
 // ===============================================
 app.post('/api/admin/delete', async (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
+  const sent = req.headers["x-admin-pass"];
 
-  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";  //好きなパスワード
-  const sentPass = req.headers["x-admin-pass"];
-
-  if (sentPass !== ADMIN_PASS) {
-    return res.status(403).json({ error: "管理者パスワードが違います" });
+  if (sent !== ADMIN_PASS) {
+    return res.status(403).json({ error:"管理者パスワードが違います" });
   }
 
   try {
     await pool.query(`DELETE FROM ranking`);
-    res.json({ result: "deleted" });
-  } catch (err) {
-    res.status(500).json({ error: "削除エラー" });
+    res.json({ result:"deleted" });
+  } catch {
+    res.status(500).json({ error:"削除エラー" });
   }
 });
 
 // ===============================================
-// 🔵 サーバー開始
+// サーバー起動
 // ===============================================
 app.listen(PORT, () => {
-  console.log('server on ' + PORT);
+  console.log("server on " + PORT);
 });
