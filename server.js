@@ -72,3 +72,15 @@ app.get('/api/ranking', async (req, res) => {
 app.listen(PORT, () => {
   console.log('server on ' + PORT);
 });
+
+// 管理者：ランキング削除
+app.post('/api/admin/delete', async (req, res) => {
+  try {
+    await pool.query(`DELETE FROM ranking`);
+    res.json({ result: "deleted" });
+  } catch (err) {
+    res.status(500).json({ error: "削除エラー" });
+  }
+});
+
+
