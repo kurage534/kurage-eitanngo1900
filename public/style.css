@@ -1,20 +1,67 @@
+/* 全体の文字を少し大きく */
 body {
   font-family: sans-serif;
   padding: 20px;
   text-align: center;
+  font-size: 1.2rem;
 }
 
-button, input {
+/* ボタンをスマホ向けに大型化 */
+button {
   width: 90%;
-  max-width: 350px;
+  max-width: 400px;
   padding: 16px;
-  font-size: 1.4rem;
-  margin: 10px 0;
+  margin: 10px auto;
+  font-size: 1.3rem;
+  border-radius: 12px;
+  border: none;
+  background: #1e90ff;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* 押した時のアニメーション */
+button:active {
+  transform: scale(0.97);
+  opacity: 0.8;
+}
+
+/* 入力欄を大きく・押しやすく */
+input {
+  width: 90%;
+  max-width: 380px;
+  padding: 14px;
+  margin: 10px auto;
+  font-size: 1.3rem;
+  border-radius: 10px;
+  border: 2px solid #ccc;
+}
+
+/* ドロップダウン（問題数選択） */
+select {
+  width: 90%;
+  max-width: 380px;
+  padding: 14px;
+  margin: 10px auto;
+  font-size: 1.3rem;
   border-radius: 10px;
 }
 
-button {
-  background: #2196F3;
-  color: white;
-  border: none;
+/* メッセージ表示 */
+#game-message {
+  margin: 20px auto;
+  font-size: 1.4rem;
+  min-height: 2.2rem;
+}
+
+/* 質問テキストを大きく */
+#question {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+}
+
+/* スコア表示も強調 */
+#score-area {
+  font-size: 1.5rem;
+  margin-top: 20px;
 }
