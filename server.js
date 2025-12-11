@@ -38,7 +38,7 @@ app.post('/api/submit', async (req, res) => {
     data = JSON.parse(f);
   } catch {}
 
-  data.push({ name, score, date: new Date().toISOString() });
+  data.push({ name, score, time, date: new Date().toISOString() });
 
   await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
   res.json({ result: 'ok' });
@@ -64,3 +64,4 @@ app.get('/api/ranking', async (req, res) => {
 app.listen(PORT, () => {
   console.log("server on " + PORT);
 });
+
