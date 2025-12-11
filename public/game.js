@@ -5,16 +5,14 @@ let score = 0;
 let total = 10;
 let answeringNow = true;
 
-// タイマー
 let timerStart = 0;
 let clearTime = 0;
 
 // 単語読み込み
 async function loadAllQuestions() {
-  const res = await fetch('/api/words');
-  allQuestions = await res.json();
-
-  document.getElementById('start-btn').disabled = false;
+  const r = await fetch("/api/words");
+  allQuestions = await r.json();
+  document.getElementById("start-btn").disabled = false;
 }
 
 // シャッフル
@@ -27,18 +25,19 @@ function shuffle(a) {
 }
 
 // ゲーム開始
-document.getElementById('start-btn').onclick = () => {
-  const sel = document.getElementById('qcount').value;
-  total = sel === "all" ? allQuestions.length : parseInt(sel);
+document.getElementById("start-btn").onclick = () => {
+  let sel = document.getElementById("qcount").value;
+  total = sel === "all" ? allQuestions.length : Number(sel);
 
   questions = shuffle([...allQuestions]).slice(0, total);
   current = 0;
   score = 0;
 
-  timerStart = Date.now(); // タイマー開始
+  timerStart = Date.now();
 
-  document.getElementById('setup-area').style.display = "none";
-  document.getElementById('game-area').style.display = "";
+  document.getElementById("setup-area").style.display = "none";
+  document.getElementById("game-area").style.display = "";
+
   showQuestion();
 };
 
@@ -47,90 +46,92 @@ function showQuestion() {
   if (current < questions.length) {
     answeringNow = true;
 
-    document.getElementById('question').textContent =
-      `(${current+1}/${questions.length}) ${questions[current].japanese}`;
+    document.getElementById("question").textContent =
+      `(${current + 1}/${questions.length}) ${questions[current].japanese}`;
 
-    document.getElementById('answer').value = "";
-    document.getElementById('submit-answer').style.display = "";
-    document.getElementById('next-btn').style.display = "none";
-    document.getElementById('game-message').textContent = "";
-
+    document.getElementById("answer").value = "";
+    document.getElementById("submit-answer").style.display = "";
+    document.getElementById("next-btn").style.display = "none";
+    document.getElementById("game-message").innerHTML = "";
   } else {
     clearTime = Math.floor((Date.now() - timerStart) / 1000);
 
-    document.getElementById('question').textContent = "ゲーム終了！";
-    document.getElementById('score-area').textContent =
-      `スコア：${score}点 / 時間：${clearTime} 秒`;
+    document.getElementById("question").textContent = "ゲーム終了！";
 
-    document.getElementById('submit-answer').style.display = "none";
-    document.getElementById('answer').style.display = "none";
-    document.getElementById('next-btn').style.display = "none";
-    document.getElementById('to-ranking').style.display = "";
+    document.getElementById("score-area").textContent =
+      `スコア：${score}点 / 時間：${clearTime}秒`;
+
+    document.getElementById("submit-answer").style.display = "none";
+    document.getElementById("answer").style.display = "none";
+    document.getElementById("next-btn").style.display = "none";
+
+    document.getElementById("to-ranking").style.display = "";
   }
 }
 
-// 解答
-document.getElementById('submit-answer').onclick = () => {
-  const ans = document.getElementById('answer').value.trim().toLowerCase();
+// 回答処理
+document.getElementById("submit-answer").onclick = () => {
+  const ans = document.getElementById("answer").value.trim().toLowerCase();
   const correct = questions[current].word.toLowerCase();
 
   if (ans === correct) {
     score += 10;
-    document.getElementById('game-message').textContent = "正解！ +10点";
+    document.getElementById("game-message").textContent = "正解！ +10点";
   } else {
-    document.getElementById('game-message').innerHTML =
-      `不正解… 正解：${questions[current].word}<br>
+    document.getElementById("game-message").innerHTML = 
+      `不正解… 正解は「${questions[current].word}」<br>
        <button id="soundBtn">音声を聞く</button>`;
   }
 
   answeringNow = false;
-
-  document.getElementById('submit-answer').style.display = "none";
-  document.getElementById('next-btn').style.display = "";
+  document.getElementById("submit-answer").style.display = "none";
+  document.getElementById("next-btn").style.display = "";
 };
 
-// 音声ボタン
-document.addEventListener('click', e => {
-  if (e.target.id === 'soundBtn') {
-    const utter = new SpeechSynthesisUtterance(questions[current].word);
-    utter.lang = "en-US";
-    speechSynthesis.speak(utter);
+// 音声
+document.addEventListener("click", e => {
+  if (e.target.id === "soundBtn") {
+    const u = new SpeechSynthesisUtterance(questions[current].word);
+    u.lang = "en-US";
+    speechSynthesis.speak(u);
   }
 });
 
 // 次へ
-document.getElementById('next-btn').onclick = () => {
+document.getElementById("next-btn").onclick = () => {
   current++;
   showQuestion();
 };
 
-// Enterキー切り替え
-window.addEventListener('keydown', e => {
+// Enterキー
+window.addEventListener("keydown", e => {
   if (e.key === "Enter") {
     if (answeringNow) {
-      document.getElementById('submit-answer').click();
+      document.getElementById("submit-answer").click();
     } else {
-      document.getElementById('next-btn').click();
+      document.getElementById("next-btn").click();
     }
   }
 });
 
 // ランキングへ
-document.getElementById('to-ranking').onclick = () => {
-  localStorage.setItem('score', score);
-  localStorage.setItem('time', clearTime);
+document.getElementById("to-ranking").onclick = () => {
+  localStorage.setItem("score", score);
+  localStorage.setItem("time", clearTime);
   location.href = "ranking.html";
 };
 
 // ランキング常時表示
 async function loadRanking() {
-  const r = await fetch('/api/ranking');
+  const r = await fetch("/api/ranking");
   const data = await r.json();
 
-  document.getElementById('ranking-list').innerHTML =
-    data.map(x => `${x.name}：${x.score}点（${x.time ?? "??"}秒）`).join("<br>");
+  document.getElementById("ranking-list").innerHTML =
+    data
+      .map(x => `${x.name}：${x.score}点（${x.time ?? "??"}秒）`)
+      .join("<br>");
 }
 
-setInterval(loadRanking, 5000);
-window.addEventListener('DOMContentLoaded', loadRanking);
-window.addEventListener('DOMContentLoaded', loadAllQuestions);
+setInterval(loadRanking, 3000);
+window.addEventListener("DOMContentLoaded", loadRanking);
+window.addEventListener("DOMContentLoaded", loadAllQuestions);
