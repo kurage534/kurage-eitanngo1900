@@ -3,60 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <title>英単語ゲーム</title>
-
-  <!-- スマホ対応 -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <h1>英単語ゲーム</h1>
+<h1>英単語ゲーム</h1>
 
-  <!-- ゲーム開始前の設定画面 -->
-  <div id="setup-area">
-    <label for="qcount">出題数：</label>
-    <select id="qcount">
-      <option value="5">5問</option>
-      <option value="10" selected>10問</option>
-      <option value="15">15問</option>
-      <option value="20">20問</option>
-      <option value="all">全問</option>
-    </select>
+<div id="setup-area">
+  <label for="qcount">出題数：</label>
+  <select id="qcount">
+    <option value="5">5問</option>
+    <option value="10" selected>10問</option>
+    <option value="15">15問</option>
+    <option value="20">20問</option>
+    <option value="all">全問</option>
+  </select>
+  <button id="start-btn">ゲーム開始</button>
+</div>
 
-    <button id="start-btn">ゲーム開始</button>
-  </div>
+<div id="game-area" style="display:none;">
+  <p id="question"></p>
+  <input type="text" id="answer" placeholder="答えを入力">
+  <button id="submit-answer">送信</button>
 
-  <!-- =============================== -->
-  <!--   クイズエリア（消えていた部分）-->
-  <!-- =============================== -->
-  <div id="game-area" style="display:none;">
+  <div id="game-message"></div>
+  <button id="next-btn" style="display:none;">次へ</button>
 
-    <!-- 問題文 -->
-    <p id="question"></p>
+  <div id="score-area"></div>
+  <button id="to-ranking" style="display:none;">ランキングへ</button>
+</div>
 
-    <!-- 回答欄 -->
-    <input type="text" id="answer" placeholder="答えを入力">
+<hr>
 
-    <!-- 解答送信 -->
-    <button id="submit-answer">送信</button>
+<h2>ランキング（常時表示）</h2>
+<div id="ranking-list"></div>
 
-    <!-- 正解・不正解メッセージ -->
-    <div id="game-message"></div>
+<br>
+<a href="index.html">トップに戻る</a>
 
-    <!-- 次へ -->
-    <button id="next-btn" style="display:none;">次へ</button>
-
-    <!-- スコア＆タイマー -->
-    <div id="score-area"></div>
-
-    <!-- ランキングへ -->
-    <button id="to-ranking" style="display:none;">ランキングへ</button>
-  </div>
-
-  <br>
-  <a href="index.html">トップに戻る</a>
-
-  <script src="game.js"></script>
+<script src="game.js"></script>
 </body>
 </html>
