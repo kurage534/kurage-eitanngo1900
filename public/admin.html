@@ -4,59 +4,36 @@
   <meta charset="UTF-8">
   <title>管理者ページ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: sans-serif; text-align: center; padding: 20px; }
-    input, button {
-      font-size: 1.4rem;
-      padding: 14px;
-      width: 90%;
-      max-width: 300px;
-      margin: 10px 0;
-      border-radius: 10px;
-    }
-    button {
-      background: #e53935;
-      color: white;
-      border: none;
-    }
-  </style>
 </head>
 <body>
 
 <h1>管理者ページ</h1>
 
-<p>管理者パスワード</p>
 <input id="password" type="password" placeholder="パスワード">
 <button id="loginBtn">ログイン</button>
 
 <div id="admin-area" style="display:none;">
-  <h2>ランキング削除</h2>
-  <button id="delBtn">ランキングをすべて削除</button>
+  <h2>ランキング全削除</h2>
+  <button id="delBtn">削除</button>
   <p id="msg"></p>
 </div>
 
 <script>
   const ADMIN_PASS = "Kurage0805";
 
-  document.getElementById('loginBtn').addEventListener('click', () => {
-    const pass = document.getElementById('password').value;
-    if (pass === ADMIN_PASS) {
+  document.getElementById('loginBtn').onclick = () => {
+    if (document.getElementById('password').value === ADMIN_PASS) {
       document.getElementById('admin-area').style.display = "";
-    } else {
-      alert("パスワードが違います");
-    }
-  });
+    } else alert("パスワードが違います");
+  };
 
-  document.getElementById('delBtn').addEventListener('click', async () => {
-    const r = await fetch('/api/admin/delete', {
-      method: "POST",
-      headers: { "x-admin-pass": ADMIN_PASS }
+  document.getElementById('delBtn').onclick = async () => {
+    await fetch('/api/admin/delete', {
+      method:"POST",
+      headers:{ "x-admin-pass": ADMIN_PASS }
     });
-
-    const data = await r.json();
-    document.getElementById('msg').textContent = "ランキングを削除しました！";
-  });
+    document.getElementById('msg').textContent = "削除しました！";
+  };
 </script>
-
 </body>
 </html>
