@@ -1,116 +1,95 @@
+/* 全体の余白 */
 body {
   font-family: sans-serif;
-  max-width: 400px;
-  margin: 2em auto;
-  background: #f5f5fa;
-  padding: 2em;
-  border-radius: 1em;
-  box-shadow: 0 0 8px #ccc;
-}
-h1, h2 {
+  padding: 20px;
   text-align: center;
+  background: #f8f8f8;
+  color: #333;
 }
-nav {
-  text-align: center;
-  margin-bottom: 2em;
+
+/* タイトル */
+h1 {
+  font-size: 2.2rem;
+  margin-bottom: 20px;
 }
-.btn {
-  display: inline-block;
-  padding: 0.5em 1em;
-  background: #007bff;
-  color: #fff;
-  border-radius: 0.3em;
-  text-decoration: none;
-  margin: 0 0.5em 1em 0.5em;
-  transition: background 0.2s;
+
+/* 問題文 */
+#question {
+  font-size: 1.8rem;
+  margin: 20px 0;
+  font-weight: bold;
 }
-.btn:hover {
-  background: #0056b3;
+
+/* 入力欄を大きくする */
+input[type="text"],
+input[type="password"] {
+  width: 90%;
+  max-width: 350px;
+  padding: 16px;
+  font-size: 1.4rem;
+  border: 2px solid #aaa;
+  border-radius: 10px;
+  margin: 10px 0;
 }
-#ranking-container {
-  margin-bottom: 2em;
-}
-#ranking-list {
-  padding-left: 1.5em;
-}
-#submit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5em;
-  margin-bottom: 1em;
-}
-#name, #score, #answer {
-  padding: 0.5em;
-  font-size: 1em;
-}
+
+/* 共通ボタンデザイン（大きくする） */
 button {
-  padding: 0.5em;
-  font-size: 1em;
-  cursor: pointer;
-  background: #007bff;
-  color: #fff;
+  width: 90%;
+  max-width: 350px;
+  font-size: 1.5rem;
+  padding: 18px;
+  margin: 12px 0;
+  border-radius: 14px;
   border: none;
-  border-radius: 0.3em;
-  transition: background 0.2s;
+  font-weight: bold;
+  cursor: pointer;
 }
-button:hover {
-  background: #0056b3;
+
+/* 解答ボタン */
+#submit-answer {
+  background-color: #2196F3;
+  color: white;
 }
-#reset-btn {
-  background: #dc3545;
+
+/* 次へボタン */
+#next-btn {
+  background-color: #4CAF50;
+  color: white;
 }
-#reset-btn:hover {
-  background: #b52d3a;
+
+/* ランキングへ */
+#to-ranking {
+  background-color: #FF9800;
+  color: white;
 }
-#result-message, #reset-message, #game-message {
-  text-align: center;
-  min-height: 1.5em;
-  margin-top: 0.5em;
+
+/* 音声ボタン（不正解時に出るやつ） */
+#soundBtn {
+  background-color: #9C27B0;
+  color: white;
 }
+
+/* ゲームメッセージ（正解/不正解） */
+#game-message {
+  font-size: 1.4rem;
+  margin: 20px 0;
+}
+
+/* スコア表示 */
 #score-area {
-  text-align: center;
-  margin-top: 1em;
-  font-size: 1.2em;
-
-}
-/* ========== ここからスマホ対応追加 ========== */
-body{
-  padding: 0 10px;
+  font-size: 1.6rem;
+  margin: 20px 0;
+  font-weight: bold;
 }
 
-input, button, select{
-  font-size: 1rem;
-  padding: 10px;
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 10px;
+/* スマホ用：ボタンの影で押しやすくする */
+button {
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
-#game-area{
-  max-width: 500px;
-  margin: auto;
-}
-
-/* ボタンを見やすく */
-button{
-  background:#0078ff;
-  border:none;
-  color:white;
-  border-radius:8px;
-}
-
-/* スマホフォント拡大 */
-h1{
-  font-size:1.4rem;
-  text-align:center;
-}
-
-/* 超スマホ小画面 */
-@media(max-width:480px){
-  body{
-    font-size:16px;
-  }
-  h1{
-    font-size:1.3rem;
-  }
+/* PC でも中央に収まるように */
+#game-area,
+#setup-area {
+  max-width: 450px;
+  margin: 0 auto;
 }
