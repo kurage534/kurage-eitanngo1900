@@ -1,11 +1,6 @@
-// ===============================================
-// server.js ーーー DB版ランキング保存 ＋ 管理者機能 完全版
-// ===============================================
-
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
-const { Pool } = require('pg');
 const { parse } = require('csv-parse/sync');
 
 const app = express();
@@ -14,40 +9,13 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ===============================================
-// 🔵 DB 接続設定
-// ===============================================
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+const DATA_FILE = path.join(__dirname, 'ranking.json');
 
-// ===============================================
-// 🔵 ランキングテーブル自動生成
-// ===============================================
-async function ensureTable() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS ranking(
-      id SERIAL PRIMARY KEY,
-      name TEXT,
-      score INTEGER,
-      time INTEGER,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-}
-ensureTable();
-
-// ===============================================
-// 🔵 単語取得 API（BOM除去対応）
-// ===============================================
+// 単語取得
 app.get('/api/words', async (req, res) => {
   try {
     let csvFile = await fs.readFile(path.join(__dirname, 'words.csv'), 'utf-8');
-
-    if (csvFile.charCodeAt(0) === 0xFEFF) {
-      csvFile = csvFile.slice(1);
-    }
+    if (csvFile.charCodeAt(0) === 0xFEFF) csvFile = csvFile.slice(1);
 
     const records = parse(csvFile, {
       columns: true,
@@ -55,66 +23,44 @@ app.get('/api/words', async (req, res) => {
     });
 
     res.json(records);
-  } catch {
-    res.status(500).json({ error: '単語リスト読み込みエラー' });
+  } catch (err) {
+    res.status(500).json({ error: "単語リスト取得エラー" });
   }
 });
 
-// ===============================================
-// 🔵 ランキング送信 API
-// ===============================================
+// ランキング送信
 app.post('/api/submit', async (req, res) => {
-  const { name, score, time } = req.body;
+  const { name, score } = req.body;
+  let data = [];
 
   try {
-    await pool.query(
-      `INSERT INTO ranking(name, score, time) VALUES($1,$2,$3)`,
-      [name, score, time || null]
-    );
-    res.json({ result: 'ok' });
-  } catch (e) {
-    res.status(500).json({ error: 'DB保存エラー' });
-  }
+    const f = await fs.readFile(DATA_FILE, 'utf-8');
+    data = JSON.parse(f);
+  } catch {}
+
+  data.push({ name, score, date: new Date().toISOString() });
+
+  await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
+  res.json({ result: 'ok' });
 });
 
-// ===============================================
-// 🔵 ランキング取得 API
-// ===============================================
+// ランキング取得
 app.get('/api/ranking', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT * FROM ranking
-      ORDER BY score DESC, time ASC NULLS LAST, id ASC
-      LIMIT 50
-    `);
-    res.json(result.rows);
+    let data = [];
+    try {
+      const f = await fs.readFile(DATA_FILE, 'utf-8');
+      data = JSON.parse(f);
+    } catch {}
+
+    data.sort((a, b) => b.score - a.score);
+    res.json(data.slice(0, 10));
+
   } catch {
-    res.status(500).json({ error: 'DB取得エラー' });
+    res.status(500).json({ error: "ランキング取得エラー" });
   }
 });
 
-// ===============================================
-// 🔴 管理者専用：ランキング削除 API
-// ===============================================
-app.post('/api/admin/delete', async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
-  const sent = req.headers["x-admin-pass"];
-
-  if (sent !== ADMIN_PASS) {
-    return res.status(403).json({ error: "管理者パスワードが違います" });
-  }
-
-  try {
-    await pool.query(`DELETE FROM ranking`);
-    res.json({ result: "deleted" });
-  } catch {
-    res.status(500).json({ error: "削除エラー" });
-  }
-});
-
-// ===============================================
-// サーバー起動
-// ===============================================
 app.listen(PORT, () => {
   console.log("server on " + PORT);
 });
