@@ -4,7 +4,11 @@ let current = 0;
 let score = 0;
 let total = 10;
 
-let answeringNow = true; // Enterキー判定用
+let answeringNow = true;
+
+// ★ タイマー用
+let timerStart = 0;
+let clearTime = 0;
 
 // 単語読み込み
 async function loadAllQuestions() {
@@ -33,6 +37,9 @@ document.getElementById('start-btn').addEventListener('click', () => {
   current = 0;
   score = 0;
 
+  // ★ タイマー開始
+  timerStart = Date.now();
+
   document.getElementById('setup-area').style.display = 'none';
   document.getElementById('game-area').style.display = '';
 
@@ -52,8 +59,14 @@ function showQuestion() {
     document.getElementById('next-btn').style.display = 'none';
     document.getElementById('game-message').innerHTML = '';
   } else {
+    // ★ 全問終了 → タイマー停止
+    clearTime = Math.floor((Date.now() - timerStart) / 1000);
+
     document.getElementById('question').textContent = '終了！';
-    document.getElementById('score-area').textContent = `スコア：${score}`;
+
+    // 時間を画面に表示
+    document.getElementById('score-area').textContent =
+      `スコア：${score}点 ／ 時間：${clearTime}秒`;
 
     document.getElementById('submit-answer').style.display = 'none';
     document.getElementById('answer').style.display = 'none';
@@ -62,7 +75,7 @@ function showQuestion() {
   }
 }
 
-// 回答ボタン
+// 回答処理
 document.getElementById('submit-answer').addEventListener('click', () => {
   const ans = document.getElementById('answer').value.trim().toLowerCase();
   const correct = questions[current].word.toLowerCase();
@@ -71,19 +84,19 @@ document.getElementById('submit-answer').addEventListener('click', () => {
     score += 10;
     document.getElementById('game-message').textContent = '正解！ +10点';
   } else {
-    // ★ 不正解時に音声ボタンを追加 ★
+    // ★ 不正解時に音声ボタン
     document.getElementById('game-message').innerHTML =
       `不正解… 正解は「${questions[current].word}」<br>
        <button id="soundBtn">音声を聞く</button>`;
   }
 
-  answeringNow = false; // Enterキーを「次へ」用に切替
+  answeringNow = false;
 
   document.getElementById('submit-answer').style.display = 'none';
   document.getElementById('next-btn').style.display = '';
 });
 
-// ★ 音声ボタン処理
+// 音声ボタン
 document.addEventListener('click', (e) => {
   if (e.target.id === 'soundBtn') {
     const utter = new SpeechSynthesisUtterance(questions[current].word);
@@ -98,22 +111,20 @@ document.getElementById('next-btn').addEventListener('click', () => {
   showQuestion();
 });
 
-// ★ ENTERキー最適化
+// ENTERキー最適化
 window.addEventListener('keydown', (e) => {
   if (e.key === "Enter") {
-    // 入力中 → 「送信」
     if (answeringNow) {
       document.getElementById('submit-answer').click();
-    }
-    // 判定後 → 「次へ」
-    else {
+    } else {
       document.getElementById('next-btn').click();
     }
   }
 });
 
-// ランキングへ
+// ランキングへ（時間も保存準備OK）
 document.getElementById('to-ranking').addEventListener('click', () => {
   localStorage.setItem('score', score);
+  localStorage.setItem('time', clearTime); // ★ タイムも保存
   window.location.href = 'ranking.html';
 });
