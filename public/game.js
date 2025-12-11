@@ -3,6 +3,9 @@ let questions = [];
 let current = 0;
 let score = 0;
 let total = 10;
+let timerStart = 0;
+let clearTime = 0;
+
 
 // Enterキーの動作切替フラグ
 let answeringNow = true;
@@ -149,3 +152,4 @@ document.getElementById('to-ranking').addEventListener('click', () => {
 // 最初の単語読み込み
 // =============================
 window.addEventListener('DOMContentLoaded', loadAllQuestions);
+
