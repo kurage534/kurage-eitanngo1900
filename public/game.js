@@ -3,119 +3,93 @@ let questions = [];
 let current = 0;
 let score = 0;
 let total = 10;
-
-// ★追加：Enter制御
 let answeringNow = true;
 
-// ★追加：タイマー
+// タイマー
 let timerStart = 0;
 let clearTime = 0;
 
-// =============================
-// 単語取得
-// =============================
+// 単語読み込み
 async function loadAllQuestions() {
-  try {
-    const res = await fetch('/api/words');
-    allQuestions = await res.json();
+  const res = await fetch('/api/words');
+  allQuestions = await res.json();
 
-    document.getElementById('start-btn').disabled = false;
-    document.getElementById('qcount').disabled = false;
-  } catch {
-    document.getElementById('setup-area').innerHTML = '単語読み込みエラー';
-  }
+  document.getElementById('start-btn').disabled = false;
 }
 
-// =============================
 // シャッフル
-// =============================
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return arr;
+  return a;
 }
 
-// =============================
 // ゲーム開始
-// =============================
-document.getElementById('start-btn').addEventListener('click', () => {
-  let sel = document.getElementById('qcount').value;
-
+document.getElementById('start-btn').onclick = () => {
+  const sel = document.getElementById('qcount').value;
   total = sel === "all" ? allQuestions.length : parseInt(sel);
-  questions = shuffle([...allQuestions]).slice(0, total);
 
+  questions = shuffle([...allQuestions]).slice(0, total);
   current = 0;
   score = 0;
 
-  // ★タイマー開始
-  timerStart = Date.now();
+  timerStart = Date.now(); // タイマー開始
 
-  document.getElementById('setup-area').style.display = 'none';
-  document.getElementById('game-area').style.display = '';
+  document.getElementById('setup-area').style.display = "none";
+  document.getElementById('game-area').style.display = "";
   showQuestion();
-});
+};
 
-// =============================
 // 問題表示
-// =============================
 function showQuestion() {
   if (current < questions.length) {
     answeringNow = true;
 
     document.getElementById('question').textContent =
-      `(${current+1}/${questions.length})「${questions[current].japanese}」の英単語は？`;
+      `(${current+1}/${questions.length}) ${questions[current].japanese}`;
 
-    document.getElementById('answer').value = '';
-    document.getElementById('game-message').textContent = '';
+    document.getElementById('answer').value = "";
+    document.getElementById('submit-answer').style.display = "";
+    document.getElementById('next-btn').style.display = "none";
+    document.getElementById('game-message').textContent = "";
 
-    document.getElementById('submit-answer').style.display = '';
-    document.getElementById('answer').style.display = '';
-    document.getElementById('next-btn').style.display = 'none';
-    document.getElementById('to-ranking').style.display = 'none';
   } else {
-    // ★タイマー終了
     clearTime = Math.floor((Date.now() - timerStart) / 1000);
 
-    document.getElementById('question').textContent = 'ゲーム終了！';
+    document.getElementById('question').textContent = "ゲーム終了！";
     document.getElementById('score-area').textContent =
-      `スコア：${score} / 時間：${clearTime} 秒`;
+      `スコア：${score}点 / 時間：${clearTime} 秒`;
 
-    document.getElementById('submit-answer').style.display = 'none';
-    document.getElementById('answer').style.display = 'none';
-    document.getElementById('next-btn').style.display = 'none';
-
-    document.getElementById('to-ranking').style.display = '';
+    document.getElementById('submit-answer').style.display = "none";
+    document.getElementById('answer').style.display = "none";
+    document.getElementById('next-btn').style.display = "none";
+    document.getElementById('to-ranking').style.display = "";
   }
 }
 
-// =============================
-// 回答送信
-// =============================
-document.getElementById('submit-answer').addEventListener('click', () => {
+// 解答
+document.getElementById('submit-answer').onclick = () => {
   const ans = document.getElementById('answer').value.trim().toLowerCase();
   const correct = questions[current].word.toLowerCase();
 
   if (ans === correct) {
     score += 10;
-    document.getElementById('game-message').textContent = '正解！ +10点';
+    document.getElementById('game-message').textContent = "正解！ +10点";
   } else {
     document.getElementById('game-message').innerHTML =
-      `不正解… 正解は「${questions[current].word}」<br>
+      `不正解… 正解：${questions[current].word}<br>
        <button id="soundBtn">音声を聞く</button>`;
   }
 
   answeringNow = false;
 
-  document.getElementById('submit-answer').style.display = 'none';
-  document.getElementById('answer').style.display = 'none';
-  document.getElementById('next-btn').style.display = '';
-});
+  document.getElementById('submit-answer').style.display = "none";
+  document.getElementById('next-btn').style.display = "";
+};
 
-// =============================
 // 音声ボタン
-// =============================
 document.addEventListener('click', e => {
   if (e.target.id === 'soundBtn') {
     const utter = new SpeechSynthesisUtterance(questions[current].word);
@@ -124,37 +98,39 @@ document.addEventListener('click', e => {
   }
 });
 
-// =============================
-// 次へボタン
-// =============================
-document.getElementById('next-btn').addEventListener('click', () => {
+// 次へ
+document.getElementById('next-btn').onclick = () => {
   current++;
   showQuestion();
-});
+};
 
-// =============================
-// Enterキー
-// =============================
+// Enterキー切り替え
 window.addEventListener('keydown', e => {
   if (e.key === "Enter") {
     if (answeringNow) {
-      document.getElementById("submit-answer").click();
+      document.getElementById('submit-answer').click();
     } else {
-      document.getElementById("next-btn").click();
+      document.getElementById('next-btn').click();
     }
   }
 });
 
-// =============================
 // ランキングへ
-// =============================
-document.getElementById('to-ranking').addEventListener('click', () => {
+document.getElementById('to-ranking').onclick = () => {
   localStorage.setItem('score', score);
   localStorage.setItem('time', clearTime);
-  window.location.href = 'ranking.html';
-});
+  location.href = "ranking.html";
+};
 
-// =============================
-// 初期読み込み
-// =============================
+// ランキング常時表示
+async function loadRanking() {
+  const r = await fetch('/api/ranking');
+  const data = await r.json();
+
+  document.getElementById('ranking-list').innerHTML =
+    data.map(x => `${x.name}：${x.score}点（${x.time ?? "??"}秒）`).join("<br>");
+}
+
+setInterval(loadRanking, 5000);
+window.addEventListener('DOMContentLoaded', loadRanking);
 window.addEventListener('DOMContentLoaded', loadAllQuestions);
