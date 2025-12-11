@@ -2,61 +2,61 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ランキング</title>
+  <title>英単語ゲーム</title>
+
+  <!-- スマホ対応 -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: sans-serif; padding: 20px; text-align: center; }
-    input, button {
-      padding: 14px;
-      font-size: 1.3rem;
-      width: 90%;
-      max-width: 300px;
-      margin: 10px 0;
-      border-radius: 10px;
-    }
-    button { background:#4CAF50; color:white; border:none; }
-  </style>
+
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h1>ランキング</h1>
+  <h1>英単語ゲーム</h1>
 
-<p>名前を入力して登録</p>
-<input id="name" placeholder="名前">
-<button id="send">送信</button>
+  <!-- ゲーム開始前の設定画面 -->
+  <div id="setup-area">
+    <label for="qcount">出題数：</label>
+    <select id="qcount">
+      <option value="5">5問</option>
+      <option value="10" selected>10問</option>
+      <option value="15">15問</option>
+      <option value="20">20問</option>
+      <option value="all">全問</option>
+    </select>
 
-<h2>上位50位</h2>
-<div id="list"></div>
+    <button id="start-btn">ゲーム開始</button>
+  </div>
 
-<a href="index.html">トップへ戻る</a>
+  <!-- =============================== -->
+  <!--   クイズエリア（消えていた部分）-->
+  <!-- =============================== -->
+  <div id="game-area" style="display:none;">
 
-<script>
-  async function load() {
-    const r = await fetch('/api/ranking');
-    const data = await r.json();
+    <!-- 問題文 -->
+    <p id="question"></p>
 
-    const list = document.getElementById('list');
-    list.innerHTML = data.map(
-      x => `${x.name}：${x.score}点（${x.time ?? "??"} 秒）`
-    ).join("<br>");
-  }
-  load();
+    <!-- 回答欄 -->
+    <input type="text" id="answer" placeholder="答えを入力">
 
-  document.getElementById('send').addEventListener('click', async () => {
-    const name = document.getElementById('name').value;
-    const score = Number(localStorage.getItem('score'));
-    const time  = Number(localStorage.getItem('time'));
+    <!-- 解答送信 -->
+    <button id="submit-answer">送信</button>
 
-    await fetch('/api/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, score, time })
-    });
+    <!-- 正解・不正解メッセージ -->
+    <div id="game-message"></div>
 
-    alert("登録しました！");
-    load();
-  });
-</script>
+    <!-- 次へ -->
+    <button id="next-btn" style="display:none;">次へ</button>
 
+    <!-- スコア＆タイマー -->
+    <div id="score-area"></div>
+
+    <!-- ランキングへ -->
+    <button id="to-ranking" style="display:none;">ランキングへ</button>
+  </div>
+
+  <br>
+  <a href="index.html">トップに戻る</a>
+
+  <script src="game.js"></script>
 </body>
 </html>
