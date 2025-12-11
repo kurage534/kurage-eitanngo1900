@@ -21,19 +21,22 @@
 <script>
   const ADMIN_PASS = "Kurage0805";
 
-  document.getElementById('loginBtn').onclick = () => {
-    if (document.getElementById('password').value === ADMIN_PASS) {
-      document.getElementById('admin-area').style.display = "";
-    } else alert("パスワードが違います");
+  document.getElementById("loginBtn").onclick = () => {
+    if (document.getElementById("password").value === ADMIN_PASS) {
+      document.getElementById("admin-area").style.display = "";
+    } else {
+      alert("パスワードが違います");
+    }
   };
 
-  document.getElementById('delBtn').onclick = async () => {
-    await fetch('/api/admin/delete', {
+  document.getElementById("delBtn").onclick = async () => {
+    await fetch("/api/admin/delete", {
       method:"POST",
       headers:{ "x-admin-pass": ADMIN_PASS }
     });
-    document.getElementById('msg').textContent = "削除しました！";
+    document.getElementById("msg").textContent = "削除しました";
   };
 </script>
+
 </body>
 </html>
