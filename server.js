@@ -1,5 +1,5 @@
 // ===============================
-// server.js（JSON保存 + 管理者削除付き 完全版）
+// server.js（JSON保存 + 管理者削除 + 重複防止 + 完全版）
 // ===============================
 
 const express = require('express');
@@ -11,7 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const DATA_FILE = path.join(__dirname, "ranking.json");
-const ADMIN_PASS = process.env.ADMIN_PASS || "admin"; // ← Render に設定する
+const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -24,6 +24,7 @@ app.get("/api/words", async (req, res) => {
   try {
     let csvText = await fs.readFile(path.join(__dirname, "words.csv"), "utf-8");
 
+    // BOM除去
     if (csvText.charCodeAt(0) === 0xFEFF) {
       csvText = csvText.slice(1);
     }
@@ -42,7 +43,7 @@ app.get("/api/words", async (req, res) => {
 
 
 // ------------------------------
-// 2. ランキング保存
+// 2. ランキング保存（重複登録防止）
 // ------------------------------
 app.post("/api/submit", async (req, res) => {
   const { name, score, time } = req.body;
@@ -53,6 +54,7 @@ app.post("/api/submit", async (req, res) => {
 
   let ranking = [];
 
+  // 既存ランキング読み込み
   try {
     const file = await fs.readFile(DATA_FILE, "utf-8");
     ranking = JSON.parse(file);
@@ -60,19 +62,29 @@ app.post("/api/submit", async (req, res) => {
     ranking = [];
   }
 
+  const normalizedTime = Number(time);
+  const finalTime = isNaN(normalizedTime) ? null : normalizedTime;
+
+  // ★ 重複チェック（名前 + スコア + 時間）
+  const exists = ranking.some(r =>
+    r.name === name &&
+    r.score === score &&
+    (r.time ?? null) === finalTime
+  );
+
+  if (exists) {
+    return res.json({ result: "duplicate" });
+  }
+
+  // 新しい記録を追加
   ranking.push({
     name,
     score,
-    time: Number(time) || null,
-    date: new Date().toISOString(),
+    time: finalTime,
+    date: new Date().toISOString()
   });
 
-  try {
-    await fs.writeFile(DATA_FILE, JSON.stringify(ranking, null, 2));
-  } catch (err) {
-    console.error("保存エラー:", err);
-    return res.status(500).json({ error: "保存に失敗しました" });
-  }
+  await fs.writeFile(DATA_FILE, JSON.stringify(ranking, null, 2));
 
   res.json({ result: "ok" });
 });
@@ -107,11 +119,7 @@ app.post("/api/admin/delete", async (req, res) => {
     return res.status(403).json({ error: "パスワードが違います" });
   }
 
-  try {
-    await fs.writeFile(DATA_FILE, JSON.stringify([], null, 2));
-  } catch (err) {
-    return res.status(500).json({ error: "削除に失敗しました" });
-  }
+  await fs.writeFile(DATA_FILE, JSON.stringify([], null, 2));
 
   res.json({ result: "deleted" });
 });
