@@ -154,6 +154,21 @@ app.post("/api/admin/delete", async (req, res) => {
   }
 });
 
+// ===============================
+// 管理者ログイン
+// ===============================
+app.post("/api/admin/login", (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
+  const { pass } = req.body;
+
+  if (pass === ADMIN_PASS) {
+    return res.json({ result: "ok" });
+  }
+
+  return res.status(403).json({ result: "ng", error: "パスワードが違います" });
+});
+
+
 
 // ===============================
 // 6. サーバー起動
@@ -161,3 +176,4 @@ app.post("/api/admin/delete", async (req, res) => {
 app.listen(PORT, () => {
   console.log("🚀 server running on port " + PORT);
 });
+
