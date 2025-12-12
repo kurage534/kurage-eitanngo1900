@@ -5,48 +5,99 @@
   <title>ランキング</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css">
+
+  <style>
+    #list div {
+      background: #f4f4f4;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
+      font-size: 1.2rem;
+    }
+    #msg {
+      font-size: 1.2rem;
+      margin-top: 10px;
+      min-height: 1.5em;
+    }
+  </style>
 </head>
 <body>
 
 <h1>ランキング</h1>
 
+<!-- 名前入力 -->
 <input id="name" placeholder="名前（必須）" autocomplete="off">
+
+<!-- 登録ボタン -->
 <button id="send">ランキングに登録する</button>
+
+<!-- メッセージ表示 -->
 <div id="msg"></div>
+
+<hr style="margin:25px 0;">
 
 <h2>上位10位</h2>
 <div id="list">読み込み中...</div>
 
 <br>
-<a href="index.html">戻る</a>
+<a href="index.html">← ホームへ戻る</a>
+
 
 <script>
+// HTML特殊文字エスケープ（安全対策）
 function esc(s) {
-  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return s.replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
 }
 
-async function load() {
-  const res = await fetch('/api/ranking');
-  const data = await res.json();
 
-  if (!data.length) {
-    document.getElementById('list').innerHTML = "<i>まだありません</i>";
-    return;
+// ----------------------------
+// ランキング読み込み
+// ----------------------------
+async function loadRanking() {
+  try {
+    const res = await fetch("/api/ranking");
+    const data = await res.json();
+
+    if (!Array.isArray(data) || data.length === 0) {
+      document.getElementById("list").innerHTML =
+        "<div>まだ登録がありません</div>";
+      return;
+    }
+
+    document.getElementById("list").innerHTML =
+      data.map((x, i) => {
+        const t = x.time === null ? "記録なし" : `${x.time} 秒`;
+        return `
+          <div>
+            <strong>${i+1}位</strong><br>
+            名前：${esc(x.name)}<br>
+            スコア：${x.score} 点<br>
+            タイム：${t}
+          </div>
+        `;
+      }).join("");
+
+  } catch (err) {
+    document.getElementById("list").innerHTML =
+      "<div style='color:red;'>ランキングの読み込みに失敗しました</div>";
   }
-
-  document.getElementById('list').innerHTML =
-    data.map((x, i) => {
-      const time = x.time == null ? "記録なし" : `${x.time}秒`;
-      return `<div><strong>${i+1}位</strong> ${esc(x.name)}：${x.score}点 ／ ${time}</div>`;
-    }).join("");
 }
-load();
+loadRanking();
 
-document.getElementById('send').addEventListener('click', async () => {
-  const name = document.getElementById('name').value.trim();
-  const score = Number(localStorage.getItem('score'));
-  const time  = Number(localStorage.getItem('time'));
-  const msg = document.getElementById('msg');
+
+// ----------------------------
+// ランキング送信
+// ----------------------------
+document.getElementById("send").addEventListener("click", async () => {
+  const name = document.getElementById("name").value.trim();
+
+  const score = Number(localStorage.getItem("score"));
+  const time = Number(localStorage.getItem("time"));
+
+  const msg = document.getElementById("msg");
+  msg.textContent = "";
 
   if (!name) {
     msg.textContent = "名前を入力してください";
@@ -54,24 +105,39 @@ document.getElementById('send').addEventListener('click', async () => {
     return;
   }
 
-  const res = await fetch('/api/submit', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({name, score, time})
-  });
+  // サーバーへ送信
+  try {
+    const res = await fetch("/api/submit", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ name, score, time })
+    });
 
-  const result = await res.json();
+    const result = await res.json();
 
-  if (result.result === "duplicate") {
-    msg.textContent = "同じ記録が既に登録されています";
+    // 重複登録
+    if (result.result === "duplicate") {
+      msg.textContent = "同じ記録は既に登録されています";
+      msg.style.color = "red";
+      return;
+    }
+
+    if (result.result === "ok") {
+      msg.textContent = "登録しました！";
+      msg.style.color = "green";
+
+      // 再読み込み
+      loadRanking();
+      return;
+    }
+
+    msg.textContent = "登録に失敗しました";
     msg.style.color = "red";
-    return;
+
+  } catch (err) {
+    msg.textContent = "通信エラー：登録できませんでした";
+    msg.style.color = "red";
   }
-
-  msg.textContent = "登録しました！";
-  msg.style.color = "green";
-
-  load();
 });
 </script>
 
