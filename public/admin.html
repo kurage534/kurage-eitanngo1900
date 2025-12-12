@@ -10,9 +10,9 @@
 
 <h1>管理者ページ</h1>
 
-<p>ランキングデータを全削除できます</p>
+<p>ランキングを全削除できます</p>
 
-<input id="pass" type="password" placeholder="管理パスワード">
+<input id="pass" type="password" placeholder="パスワード">
 <button id="deleteBtn">ランキング削除</button>
 
 <div id="msg"></div>
@@ -24,28 +24,22 @@ document.getElementById('deleteBtn').addEventListener('click', async () => {
 
   msg.textContent = "";
 
-  try {
-    const res = await fetch("/api/admin/delete", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ pass })
-    });
+  const res = await fetch("/api/admin/delete", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ pass })
+  });
 
-    const result = await res.json();
+  const result = await res.json();
 
-    if (!res.ok) {
-      msg.style.color = "red";
-      msg.textContent = result.error || "エラーが発生しました";
-      return;
-    }
-
-    msg.style.color = "green";
-    msg.textContent = "ランキングを削除しました！";
-
-  } catch {
+  if (!res.ok) {
+    msg.textContent = result.error || "エラー";
     msg.style.color = "red";
-    msg.textContent = "通信エラーです";
+    return;
   }
+
+  msg.textContent = "削除しました！";
+  msg.style.color = "green";
 });
 </script>
 
