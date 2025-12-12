@@ -5,42 +5,145 @@
   <title>管理者ページ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* 管理者ページ専用デザイン強化 */
+    #admin-box {
+      max-width: 400px;
+      margin: 40px auto;
+      padding: 20px;
+      border-radius: 14px;
+      background: #f8f8f8;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    #pass {
+      width: 90%;
+      padding: 14px;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      border: 2px solid #ccc;
+    }
+
+    #toggle-pass {
+      margin-top: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: #0077ff;
+    }
+
+    #deleteBtn {
+      width: 90%;
+      padding: 14px;
+      margin-top: 20px;
+      background: #ff4444;
+      color: #fff;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    #deleteBtn:active {
+      opacity: 0.8;
+      transform: scale(0.97);
+    }
+
+    #msg {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      min-height: 1.5em;
+    }
+  </style>
 </head>
 <body>
 
 <h1>管理者ページ</h1>
 
-<p>ランキングを全削除できます</p>
+<div id="admin-box">
 
-<input id="pass" type="password" placeholder="パスワード">
-<button id="deleteBtn">ランキング削除</button>
+  <p>ランキングを全削除できます</p>
 
-<div id="msg"></div>
+  <!-- パスワード入力欄 -->
+  <input 
+    id="pass" 
+    type="password" 
+    placeholder="管理パスワードを入力"
+    autocomplete="off"
+  >
+
+  <!-- 表示 / 非表示 -->
+  <div id="toggle-pass">パスワードを表示</div>
+
+  <!-- 削除ボタン -->
+  <button id="deleteBtn">ランキングを全削除</button>
+
+  <!-- メッセージ表示 -->
+  <div id="msg"></div>
+
+</div>
+
+<!-- 戻る -->
+<div style="text-align:center;margin-top:20px;">
+  <a href="index.html">← ホームに戻る</a>
+</div>
+
 
 <script>
-document.getElementById('deleteBtn').addEventListener('click', async () => {
-  const pass = document.getElementById('pass').value.trim();
-  const msg = document.getElementById('msg');
+  // パスワード表示/非表示の切り替え
+  const passInput = document.getElementById("pass");
+  const toggleText = document.getElementById("toggle-pass");
 
-  msg.textContent = "";
-
-  const res = await fetch("/api/admin/delete", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ pass })
+  toggleText.addEventListener("click", () => {
+    if (passInput.type === "password") {
+      passInput.type = "text";
+      toggleText.textContent = "パスワードを隠す";
+    } else {
+      passInput.type = "password";
+      toggleText.textContent = "パスワードを表示";
+    }
   });
 
-  const result = await res.json();
 
-  if (!res.ok) {
-    msg.textContent = result.error || "エラー";
-    msg.style.color = "red";
-    return;
-  }
+  // 削除ボタン
+  document.getElementById("deleteBtn").addEventListener("click", async () => {
+    const pass = passInput.value.trim();
+    const msg = document.getElementById("msg");
 
-  msg.textContent = "削除しました！";
-  msg.style.color = "green";
-});
+    msg.textContent = "";
+
+    if (!pass) {
+      msg.textContent = "パスワードを入力してください";
+      msg.style.color = "red";
+      return;
+    }
+
+    // 削除前の確認（誤操作防止）
+    const ok = confirm("本当にランキングを全削除しますか？\nこの操作は元に戻せません。");
+    if (!ok) return;
+
+    // サーバーへ削除リクエスト
+    const res = await fetch("/api/admin/delete", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ pass })
+    });
+
+    const result = await res.json();
+
+    // パスワードエラー
+    if (!res.ok) {
+      msg.textContent = result.error || "エラーが発生しました";
+      msg.style.color = "red";
+      return;
+    }
+
+    // 成功メッセージ
+    msg.textContent = "ランキングを削除しました！";
+    msg.style.color = "green";
+    
+  });
 </script>
 
 </body>
