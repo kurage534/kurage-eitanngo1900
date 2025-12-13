@@ -1,73 +1,154 @@
-let words = [];
+// =====================================
+// game.js（DB対応版・送信最適化版・音声・タイマー）
+// =====================================
+
+let allQuestions = [];
+let questions = [];
 let current = 0;
 let score = 0;
-let startTime = 0;
-let timerInterval = null;
+let total = 10;
 
-// クイズ初期化
-async function init() {
+let answeringNow = true;
+
+let timerStart = 0;
+let clearTime = 0;
+
+
+// -------------------------
+// 単語読み込み
+// -------------------------
+async function loadAllQuestions() {
   const res = await fetch("/api/words");
-  words = await res.json();
+  allQuestions = await res.json();
+}
+loadAllQuestions();
+
+
+// -------------------------
+// シャッフル
+// -------------------------
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+
+// -------------------------
+// ゲーム開始
+// -------------------------
+document.getElementById("start-btn").addEventListener("click", () => {
+  const sel = document.getElementById("qcount").value;
+
+  total = sel === "all" ? allQuestions.length : Number(sel);
+
+  questions = shuffle([...allQuestions]).slice(0, total);
 
   current = 0;
   score = 0;
 
-  startTime = Date.now();
-  timerInterval = setInterval(updateTimer, 1000);
+  timerStart = Date.now();
 
+  document.getElementById("setup-area").style.display = "none";
+  document.getElementById("game-area").style.display = "";
   showQuestion();
-}
+});
 
-// タイマー更新
-function updateTimer() {
-  const sec = Math.floor((Date.now() - startTime) / 1000);
-  document.getElementById("timer").textContent = `時間：${sec} 秒`;
-}
 
+// -------------------------
 // 問題表示
+// -------------------------
 function showQuestion() {
-  if (current >= words.length) {
-    finishQuiz();
-    return;
-  }
+  if (current < questions.length) {
+    answeringNow = true;
 
-  const w = words[current];
-  document.getElementById("question").textContent = w.jp;
-  document.getElementById("answer").value = "";
-  document.getElementById("answer").focus();
+    document.getElementById("question").textContent =
+      `(${current + 1}/${questions.length}) ${questions[current].japanese}`;
+
+    document.getElementById("answer").value = "";
+    document.getElementById("submit-answer").style.display = "";
+    document.getElementById("next-btn").style.display = "none";
+    document.getElementById("game-message").innerHTML = "";
+  } else {
+    clearTime = Math.floor((Date.now() - timerStart) / 1000);
+
+    document.getElementById("question").textContent = "終了！";
+    document.getElementById("score-area").textContent =
+      `スコア：${score}点 ／ 時間：${clearTime}秒`;
+
+    document.getElementById("submit-answer").style.display = "none";
+    document.getElementById("answer").style.display = "none";
+    document.getElementById("next-btn").style.display = "none";
+    document.getElementById("to-ranking").style.display = "";
+  }
 }
 
-// 回答判定
-function checkAnswer() {
-  const input = document.getElementById("answer").value.trim();
-  if (!input) return;
 
-  const correct = words[current].en;
+// -------------------------
+// 回答送信
+// -------------------------
+document.getElementById("submit-answer").addEventListener("click", () => {
+  const ans = document.getElementById("answer").value.trim().toLowerCase();
+  const correct = questions[current].word.toLowerCase();
 
-  if (input.toLowerCase() === correct.toLowerCase()) {
-    score++;
+  if (ans === correct) {
+    score += 10;
+    document.getElementById("game-message").textContent = "正解！ +10点";
+  } else {
+    document.getElementById("game-message").innerHTML =
+      `不正解… 正解は <b>${questions[current].word}</b><br>
+       <button id="soundBtn">音声を聞く</button>`;
   }
 
-  current++;
-  showQuestion();
-}
+  answeringNow = false;
+  document.getElementById("submit-answer").style.display = "none";
+  document.getElementById("next-btn").style.display = "";
+});
 
-// ENTERキー対応
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    checkAnswer();
+
+// -------------------------
+// 音声再生
+// -------------------------
+document.addEventListener("click", (e) => {
+  if (e.target.id === "soundBtn") {
+    const utter = new SpeechSynthesisUtterance(questions[current].word);
+    utter.lang = "en-US";
+    speechSynthesis.speak(utter);
   }
 });
 
-// 終了処理
-function finishQuiz() {
-  clearInterval(timerInterval);
 
-  const time = Math.floor((Date.now() - startTime) / 1000);
+// -------------------------
+// 次の問題へ
+// -------------------------
+document.getElementById("next-btn").addEventListener("click", () => {
+  current++;
+  showQuestion();
+});
 
-  // ランキング用データ保存
+
+// -------------------------
+// Enterキー最適化
+// -------------------------
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    if (answeringNow) {
+      document.getElementById("submit-answer").click();
+    } else {
+      document.getElementById("next-btn").click();
+    }
+  }
+});
+
+
+// -------------------------
+// ランキング画面へ
+// -------------------------
+document.getElementById("to-ranking").addEventListener("click", () => {
   localStorage.setItem("score", score);
-  localStorage.setItem("time", time);
+  localStorage.setItem("time", clearTime);
 
   window.location.href = "ranking.html";
-}
+});
