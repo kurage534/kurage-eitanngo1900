@@ -25,11 +25,11 @@
 
 <h1>ランキング</h1>
 
-<!-- 名前入力 -->
-<input id="name" placeholder="名前（必須）" autocomplete="off">
-
-<!-- 登録ボタン -->
-<button id="send">ランキングに登録する</button>
+<!-- 登録エリア -->
+<div id="register-area">
+  <input id="name" placeholder="名前（必須）" autocomplete="off">
+  <button id="send">ランキングに登録する</button>
+</div>
 
 <!-- メッセージ表示 -->
 <div id="msg"></div>
@@ -42,7 +42,6 @@
 <br>
 <a href="index.html">← ホームへ戻る</a>
 
-
 <script>
 // HTML特殊文字エスケープ（安全対策）
 function esc(s) {
@@ -51,6 +50,18 @@ function esc(s) {
   }[c]));
 }
 
+// ----------------------------
+// 登録可能かチェック
+// ----------------------------
+const canRegister = localStorage.getItem("CAN_REGISTER");
+const registerArea = document.getElementById("register-area");
+const msg = document.getElementById("msg");
+
+if (canRegister !== "YES") {
+  registerArea.style.display = "none";
+  msg.textContent = "※ クイズを1回クリアした時だけ登録できます";
+  msg.style.color = "red";
+}
 
 // ----------------------------
 // ランキング読み込み
@@ -71,7 +82,7 @@ async function loadRanking() {
         const t = x.time === null ? "記録なし" : `${x.time} 秒`;
         return `
           <div>
-            <strong>${i+1}位</strong><br>
+            <strong>${i + 1}位</strong><br>
             名前：${esc(x.name)}<br>
             スコア：${x.score} 点<br>
             タイム：${t}
@@ -86,17 +97,14 @@ async function loadRanking() {
 }
 loadRanking();
 
-
 // ----------------------------
 // ランキング送信
 // ----------------------------
 document.getElementById("send").addEventListener("click", async () => {
   const name = document.getElementById("name").value.trim();
-
   const score = Number(localStorage.getItem("score"));
   const time = Number(localStorage.getItem("time"));
 
-  const msg = document.getElementById("msg");
   msg.textContent = "";
 
   if (!name) {
@@ -105,7 +113,6 @@ document.getElementById("send").addEventListener("click", async () => {
     return;
   }
 
-  // サーバーへ送信
   try {
     const res = await fetch("/api/submit", {
       method: "POST",
@@ -115,7 +122,6 @@ document.getElementById("send").addEventListener("click", async () => {
 
     const result = await res.json();
 
-    // 重複登録
     if (result.result === "duplicate") {
       msg.textContent = "同じ記録は既に登録されています";
       msg.style.color = "red";
@@ -126,7 +132,12 @@ document.getElementById("send").addEventListener("click", async () => {
       msg.textContent = "登録しました！";
       msg.style.color = "green";
 
-      // 再読み込み
+      // ★ 二重登録防止
+      localStorage.setItem("CAN_REGISTER", "NO");
+
+      // 入力欄・ボタンを消す
+      registerArea.style.display = "none";
+
       loadRanking();
       return;
     }
