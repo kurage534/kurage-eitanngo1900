@@ -1,5 +1,5 @@
 // =====================================================
-// server.js（DB完全版：ベスト記録＋日別ランキング対応）
+// server.js（最終完全版）
 // =====================================================
 
 const express = require("express");
@@ -10,10 +10,8 @@ const { parse } = require("csv-parse/sync");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
 
-// ===============================
-// PostgreSQL 接続
-// ===============================
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -22,126 +20,133 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-
 // ===============================
-// DB 初期化
+// DB初期化
 // ===============================
 async function initDB() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ranking (
       id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL,
+      name TEXT UNIQUE,
       score INTEGER NOT NULL,
       time INTEGER NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS mistakes (
+      id SERIAL PRIMARY KEY,
+      word TEXT UNIQUE,
+      wrong_count INTEGER DEFAULT 1
+    )
+  `);
 }
 initDB();
-
 
 // ===============================
 // 単語取得
 // ===============================
 app.get("/api/words", async (req, res) => {
-  try {
-    let csv = await fs.readFile(path.join(__dirname, "words.csv"), "utf-8");
-    if (csv.charCodeAt(0) === 0xFEFF) csv = csv.slice(1);
-
-    const words = parse(csv, { columns: true, skip_empty_lines: true });
-    res.json(words);
-
-  } catch {
-    res.status(500).json({ error: "単語読み込み失敗" });
-  }
+  let csv = await fs.readFile(path.join(__dirname, "words.csv"), "utf-8");
+  if (csv.charCodeAt(0) === 0xFEFF) csv = csv.slice(1);
+  res.json(parse(csv, { columns: true, skip_empty_lines: true }));
 });
 
-
 // ===============================
-// ランキング登録（ベスト記録のみ）
+// ランキング登録（ベストのみ）
 // ===============================
 app.post("/api/submit", async (req, res) => {
   const { name, score, time } = req.body;
 
-  if (!name || typeof score !== "number" || typeof time !== "number") {
-    return res.status(400).json({ error: "不正なデータ" });
-  }
+  const old = await pool.query(
+    "SELECT score, time FROM ranking WHERE name=$1",
+    [name]
+  );
 
-  try {
-    // 既存記録取得
-    const old = await pool.query(
-      `SELECT score, time FROM ranking WHERE name=$1`,
-      [name]
-    );
-
-    if (old.rows.length > 0) {
-      const o = old.rows[0];
-
-      // ベストでない場合は保存しない
-      if (
-        score < o.score ||
-        (score === o.score && time >= o.time)
-      ) {
-        return res.json({ result: "not_best" });
-      }
-
-      // ベスト更新
-      await pool.query(
-        `UPDATE ranking
-         SET score=$1, time=$2, created_at=CURRENT_TIMESTAMP
-         WHERE name=$3`,
-        [score, time, name]
-      );
-
-      return res.json({ result: "updated" });
+  if (old.rows.length > 0) {
+    const o = old.rows[0];
+    if (score < o.score || (score === o.score && time >= o.time)) {
+      return res.json({ result: "not_best" });
     }
-
-    // 新規登録
     await pool.query(
-      `INSERT INTO ranking (name, score, time)
-       VALUES ($1, $2, $3)`,
-      [name, score, time]
+      `UPDATE ranking SET score=$1, time=$2, created_at=NOW() WHERE name=$3`,
+      [score, time, name]
     );
-
-    res.json({ result: "ok" });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "登録失敗" });
+    return res.json({ result: "updated" });
   }
+
+  await pool.query(
+    "INSERT INTO ranking(name, score, time) VALUES($1,$2,$3)",
+    [name, score, time]
+  );
+  res.json({ result: "ok" });
 });
 
-
 // ===============================
-// 全体ランキング（ベストのみ）
+// ランキング取得
 // ===============================
 app.get("/api/ranking", async (req, res) => {
-  const result = await pool.query(`
+  const r = await pool.query(`
     SELECT name, score, time
     FROM ranking
     ORDER BY score DESC, time ASC
     LIMIT 10
   `);
-  res.json(result.rows);
+  res.json(r.rows);
 });
 
-
 // ===============================
-// 今日のランキング（②）
+// 自分の順位
 // ===============================
-app.get("/api/ranking/today", async (req, res) => {
-  const result = await pool.query(`
-    SELECT name, score, time
+app.post("/api/my-rank", async (req, res) => {
+  const { score, time } = req.body;
+  const r = await pool.query(
+    `
+    SELECT COUNT(*) + 1 AS rank
     FROM ranking
-    WHERE created_at::date = CURRENT_DATE
-    ORDER BY score DESC, time ASC
-    LIMIT 10
-  `);
-  res.json(result.rows);
+    WHERE score > $1 OR (score = $1 AND time < $2)
+    `,
+    [score, time]
+  );
+  res.json({ rank: r.rows[0].rank });
 });
-
 
 // ===============================
-app.listen(PORT, () => {
-  console.log("🚀 server running on " + PORT);
+// ミス登録
+// ===============================
+app.post("/api/miss", async (req, res) => {
+  const { word } = req.body;
+  const r = await pool.query("SELECT * FROM mistakes WHERE word=$1", [word]);
+  if (r.rows.length) {
+    await pool.query(
+      "UPDATE mistakes SET wrong_count = wrong_count + 1 WHERE word=$1",
+      [word]
+    );
+  } else {
+    await pool.query("INSERT INTO mistakes(word) VALUES($1)", [word]);
+  }
+  res.json({ result: "ok" });
 });
+
+// ===============================
+// 管理者：ミス分析
+// ===============================
+app.post("/api/admin/mistakes", async (req, res) => {
+  if (req.body.pass !== ADMIN_PASS) return res.sendStatus(403);
+  const r = await pool.query(
+    "SELECT word, wrong_count FROM mistakes ORDER BY wrong_count DESC"
+  );
+  res.json(r.rows);
+});
+
+// ===============================
+// 管理者：ランキング削除
+// ===============================
+app.post("/api/admin/delete", async (req, res) => {
+  if (req.body.pass !== ADMIN_PASS) return res.sendStatus(403);
+  await pool.query("DELETE FROM ranking");
+  res.json({ result: "deleted" });
+});
+
+app.listen(PORT, () => console.log("server running"));
