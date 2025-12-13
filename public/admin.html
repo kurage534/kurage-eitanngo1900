@@ -1,109 +1,146 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>管理者ページ</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>管理者ページ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f2f2f2;
+      padding: 15px;
+    }
+    h1 {
+      text-align: center;
+    }
+    #admin-box {
+      max-width: 420px;
+      margin: 30px auto;
+      padding: 20px;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    input, button {
+      width: 100%;
+      font-size: 1.1rem;
+      padding: 14px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+    button {
+      cursor: pointer;
+      border: none;
+    }
+    #deleteBtn {
+      background: #ff4444;
+      color: #fff;
+    }
+    #csvBtn {
+      background: #2ecc71;
+      color: #fff;
+    }
+    #toggle-pass {
+      font-size: 0.9rem;
+      color: #0077ff;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+    #msg {
+      margin-top: 15px;
+      min-height: 1.5em;
+      font-weight: bold;
+    }
+    a {
+      display: block;
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
 
 <script>
+/* 🔒 管理者ログインチェック */
 if (sessionStorage.getItem("ADMIN_LOGIN") !== "YES") {
-  alert("ログインが必要です");
+  alert("管理者ログインが必要です");
   location.href = "admin-login.html";
 }
 </script>
 
 <h1>管理者ページ</h1>
 
-<h2>📊 問題別ミス分析</h2>
+<div id="admin-box">
 
-<table border="1" cellpadding="8">
-  <thead>
-    <tr>
-      <th>単語</th>
-      <th>ミス回数</th>
-    </tr>
-  </thead>
-  <tbody id="miss-table">
-    <tr><td colspan="2">読み込み中...</td></tr>
-  </tbody>
-</table>
+  <input id="pass" type="password" placeholder="管理パスワード">
+  <div id="toggle-pass">パスワードを表示</div>
 
-<hr>
+  <!-- CSV エクスポート -->
+  <button id="csvBtn">📥 ランキングCSVをダウンロード</button>
 
-<h2>⚠ ランキング全削除</h2>
-<input id="pass" type="password" placeholder="管理パスワード">
-<button id="deleteBtn">削除</button>
-<div id="msg"></div>
+  <!-- 全削除 -->
+  <button id="deleteBtn">🗑 ランキング全削除</button>
 
-<br>
-<a href="index.html">← 戻る</a>
+  <div id="msg"></div>
+</div>
+
+<a href="index.html">← ホームへ戻る</a>
 
 <script>
 const passInput = document.getElementById("pass");
+const msg = document.getElementById("msg");
 
-// ミス分析読み込み
-async function loadMiss() {
-  const pass = passInput.value || prompt("管理パスワード");
-  if (!pass) return;
+/* パスワード表示切替 */
+document.getElementById("toggle-pass").onclick = () => {
+  passInput.type = passInput.type === "password" ? "text" : "password";
+};
 
-  const res = await fetch(`/api/admin/miss?pass=${encodeURIComponent(pass)}`);
-  if (!res.ok) {
-    alert("パスワードが違います");
+/* CSV ダウンロード */
+document.getElementById("csvBtn").onclick = () => {
+  const pass = passInput.value.trim();
+  if (!pass) {
+    msg.textContent = "パスワードを入力してください";
+    msg.style.color = "red";
     return;
   }
 
-  const data = await res.json();
-  document.getElementById("miss-table").innerHTML =
-    data.map(x => `
-      <tr>
-        <td>${x.word}</td>
-        <td>${x.miss_count}</td>
-      </tr>
-    `).join("");
-}
-loadMiss();
-  <hr>
+  // ★ CSVはブラウザで直接DL
+  window.location.href =
+    `/api/admin/export/ranking?pass=${encodeURIComponent(pass)}`;
+};
 
-<h2>📥 CSVエクスポート</h2>
-
-<button id="csvRanking">ランキングCSV</button>
-<button id="csvMiss">ミス分析CSV</button>
-
-
-// 削除
+/* ランキング全削除 */
 document.getElementById("deleteBtn").onclick = async () => {
-  const pass = passInput.value;
+  const pass = passInput.value.trim();
+  if (!pass) {
+    msg.textContent = "パスワードを入力してください";
+    msg.style.color = "red";
+    return;
+  }
+
+  if (!confirm("本当にランキングを全削除しますか？")) return;
+
   const res = await fetch("/api/admin/delete", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ pass })
   });
-  const r = await res.json();
-  document.getElementById("msg").textContent =
-    r.result === "deleted" ? "削除しました" : "失敗";
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    msg.textContent = data.error || "削除エラー";
+    msg.style.color = "red";
+    return;
+  }
+
+  msg.textContent = "ランキングを削除しました";
+  msg.style.color = "green";
 };
 </script>
-<script>
-const passInput = document.getElementById("pass");
-
-document.getElementById("csvRanking").onclick = () => {
-  const pass = passInput.value || prompt("管理パスワード");
-  if (!pass) return;
-  location.href = `/api/admin/export/ranking?pass=${encodeURIComponent(pass)}`;
-};
-
-document.getElementById("csvMiss").onclick = () => {
-  const pass = passInput.value || prompt("管理パスワード");
-  if (!pass) return;
-  location.href = `/api/admin/export/miss?pass=${encodeURIComponent(pass)}`;
-};
-</script>
-
 
 </body>
 </html>
-
-
-
