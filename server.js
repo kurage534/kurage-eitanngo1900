@@ -1,5 +1,5 @@
 // =====================================================
-// server.js（PostgreSQL 完全対応・1回登録保証版）
+// server.js（DB完全版：ベスト記録＋日別ランキング対応）
 // =====================================================
 
 const express = require("express");
@@ -12,11 +12,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ===============================
-// PostgreSQL 接続設定
+// PostgreSQL 接続
 // ===============================
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }   // Render 用
+  ssl: { rejectUnauthorized: false }
 });
 
 app.use(express.json());
@@ -24,156 +24,124 @@ app.use(express.static(path.join(__dirname, "public")));
 
 
 // ===============================
-// 1. ranking テーブル自動作成
+// DB 初期化
 // ===============================
 async function initDB() {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ranking (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        score INTEGER NOT NULL,
-        time INTEGER,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-        -- ★ 同一プレイの二重登録防止
-        UNIQUE (name, score, time)
-      )
-    `);
-
-    console.log("✅ ranking テーブル OK");
-
-  } catch (err) {
-    console.error("❌ テーブル作成エラー:", err);
-  }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ranking (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      score INTEGER NOT NULL,
+      time INTEGER NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 initDB();
 
 
 // ===============================
-// 2. 単語取得（CSV）
+// 単語取得
 // ===============================
 app.get("/api/words", async (req, res) => {
   try {
     let csv = await fs.readFile(path.join(__dirname, "words.csv"), "utf-8");
+    if (csv.charCodeAt(0) === 0xFEFF) csv = csv.slice(1);
 
-    if (csv.charCodeAt(0) === 0xFEFF) {
-      csv = csv.slice(1);
-    }
-
-    const words = parse(csv, {
-      columns: true,
-      skip_empty_lines: true
-    });
-
+    const words = parse(csv, { columns: true, skip_empty_lines: true });
     res.json(words);
 
-  } catch (err) {
-    console.error("CSV読み込みエラー:", err);
-    res.status(500).json({ error: "単語の読み込みに失敗しました" });
+  } catch {
+    res.status(500).json({ error: "単語読み込み失敗" });
   }
 });
 
 
 // ===============================
-// 3. ランキング登録（完全1回制限）
+// ランキング登録（ベスト記録のみ）
 // ===============================
 app.post("/api/submit", async (req, res) => {
   const { name, score, time } = req.body;
 
-  if (!name || typeof score !== "number") {
-    return res.status(400).json({ error: "データ形式が不正です" });
+  if (!name || typeof score !== "number" || typeof time !== "number") {
+    return res.status(400).json({ error: "不正なデータ" });
   }
 
-  const t = isNaN(time) ? null : Number(time);
-
   try {
+    // 既存記録取得
+    const old = await pool.query(
+      `SELECT score, time FROM ranking WHERE name=$1`,
+      [name]
+    );
+
+    if (old.rows.length > 0) {
+      const o = old.rows[0];
+
+      // ベストでない場合は保存しない
+      if (
+        score < o.score ||
+        (score === o.score && time >= o.time)
+      ) {
+        return res.json({ result: "not_best" });
+      }
+
+      // ベスト更新
+      await pool.query(
+        `UPDATE ranking
+         SET score=$1, time=$2, created_at=CURRENT_TIMESTAMP
+         WHERE name=$3`,
+        [score, time, name]
+      );
+
+      return res.json({ result: "updated" });
+    }
+
+    // 新規登録
     await pool.query(
       `INSERT INTO ranking (name, score, time)
        VALUES ($1, $2, $3)`,
-      [name, score, t]
+      [name, score, time]
     );
 
     res.json({ result: "ok" });
 
   } catch (err) {
-    // ★ UNIQUE 制約違反 = 二重登録
-    if (err.code === "23505") {
-      return res.json({ result: "duplicate" });
-    }
-
-    console.error("登録エラー:", err);
-    res.status(500).json({ error: "ランキング登録に失敗しました" });
+    console.error(err);
+    res.status(500).json({ error: "登録失敗" });
   }
 });
 
 
 // ===============================
-// 4. ランキング取得（タイム優先）
+// 全体ランキング（ベストのみ）
 // ===============================
 app.get("/api/ranking", async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT name, score, time, created_at
-       FROM ranking
-       ORDER BY
-         score DESC,
-         time ASC NULLS LAST,
-         id ASC
-       LIMIT 10`
-    );
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error("取得エラー:", err);
-    res.status(500).json({ error: "ランキング取得に失敗しました" });
-  }
-});
-
-
-
-// ===============================
-// 5. 管理者：ランキング全削除
-// ===============================
-app.post("/api/admin/delete", async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
-  const { pass } = req.body;
-
-  if (pass !== ADMIN_PASS) {
-    return res.status(403).json({ error: "パスワードが違います" });
-  }
-
-  try {
-    await pool.query("DELETE FROM ranking");
-    res.json({ result: "deleted" });
-
-  } catch (err) {
-    console.error("削除エラー:", err);
-    res.status(500).json({ error: "削除に失敗しました" });
-  }
+  const result = await pool.query(`
+    SELECT name, score, time
+    FROM ranking
+    ORDER BY score DESC, time ASC
+    LIMIT 10
+  `);
+  res.json(result.rows);
 });
 
 
 // ===============================
-// 管理者ログイン
+// 今日のランキング（②）
 // ===============================
-app.post("/api/admin/login", (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
-  const { pass } = req.body;
-
-  if (pass === ADMIN_PASS) {
-    return res.json({ result: "ok" });
-  }
-
-  return res.status(403).json({ result: "ng", error: "パスワードが違います" });
+app.get("/api/ranking/today", async (req, res) => {
+  const result = await pool.query(`
+    SELECT name, score, time
+    FROM ranking
+    WHERE created_at::date = CURRENT_DATE
+    ORDER BY score DESC, time ASC
+    LIMIT 10
+  `);
+  res.json(result.rows);
 });
 
 
-// ===============================
-// 6. サーバー起動
 // ===============================
 app.listen(PORT, () => {
-  console.log("🚀 server running on port " + PORT);
+  console.log("🚀 server running on " + PORT);
 });
-
