@@ -19,6 +19,11 @@
       margin-top: 10px;
       min-height: 1.5em;
     }
+    .btn {
+      padding: 8px 14px;
+      font-size: 1rem;
+      margin-right: 6px;
+    }
   </style>
 </head>
 <body>
@@ -31,22 +36,24 @@
   <button id="send">ランキングに登録する</button>
 </div>
 
-<!-- メッセージ表示 -->
 <div id="msg"></div>
 
-<hr style="margin:25px 0;">
+<hr style="margin:20px 0;">
 
-<h2>上位10位</h2>
+<!-- 切り替え -->
+<button class="btn" id="allBtn">全体ランキング</button>
+<button class="btn" id="todayBtn">今日のランキング</button>
+
+<h2 id="rank-title">上位10位（全体）</h2>
 <div id="list">読み込み中...</div>
 
 <br>
 <a href="index.html">← ホームへ戻る</a>
 
 <script>
-// HTML特殊文字エスケープ（安全対策）
 function esc(s) {
   return s.replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
   }[c]));
 }
 
@@ -64,11 +71,14 @@ if (canRegister !== "YES") {
 }
 
 // ----------------------------
-// ランキング読み込み
+// ランキング読み込み共通
 // ----------------------------
-async function loadRanking() {
+async function loadRanking(url, title) {
+  document.getElementById("rank-title").textContent = title;
+  document.getElementById("list").textContent = "読み込み中...";
+
   try {
-    const res = await fetch("/api/ranking");
+    const res = await fetch(url);
     const data = await res.json();
 
     if (!Array.isArray(data) || data.length === 0) {
@@ -78,24 +88,30 @@ async function loadRanking() {
     }
 
     document.getElementById("list").innerHTML =
-      data.map((x, i) => {
-        const t = x.time === null ? "記録なし" : `${x.time} 秒`;
-        return `
-          <div>
-            <strong>${i + 1}位</strong><br>
-            名前：${esc(x.name)}<br>
-            スコア：${x.score} 点<br>
-            タイム：${t}
-          </div>
-        `;
-      }).join("");
+      data.map((x, i) => `
+        <div>
+          <strong>${i + 1}位</strong><br>
+          名前：${esc(x.name)}<br>
+          スコア：${x.score} 点<br>
+          タイム：${x.time} 秒
+        </div>
+      `).join("");
 
-  } catch (err) {
+  } catch {
     document.getElementById("list").innerHTML =
       "<div style='color:red;'>ランキングの読み込みに失敗しました</div>";
   }
 }
-loadRanking();
+
+// 初期表示
+loadRanking("/api/ranking", "上位10位（全体）");
+
+// 切り替え
+document.getElementById("allBtn").onclick = () =>
+  loadRanking("/api/ranking", "上位10位（全体）");
+
+document.getElementById("todayBtn").onclick = () =>
+  loadRanking("/api/ranking/today", "上位10位（今日）");
 
 // ----------------------------
 // ランキング送信
@@ -122,30 +138,29 @@ document.getElementById("send").addEventListener("click", async () => {
 
     const result = await res.json();
 
-    if (result.result === "duplicate") {
-      msg.textContent = "同じ記録は既に登録されています";
-      msg.style.color = "red";
+    if (result.result === "not_best") {
+      msg.textContent = "自己ベストではないため登録されませんでした";
+      msg.style.color = "orange";
       return;
+    }
+
+    if (result.result === "updated") {
+      msg.textContent = "🎉 自己ベスト更新！";
+      msg.style.color = "green";
     }
 
     if (result.result === "ok") {
       msg.textContent = "登録しました！";
       msg.style.color = "green";
-
-      // ★ 二重登録防止
-      localStorage.setItem("CAN_REGISTER", "NO");
-
-      // 入力欄・ボタンを消す
-      registerArea.style.display = "none";
-
-      loadRanking();
-      return;
     }
 
-    msg.textContent = "登録に失敗しました";
-    msg.style.color = "red";
+    // 二重登録防止
+    localStorage.setItem("CAN_REGISTER", "NO");
+    registerArea.style.display = "none";
 
-  } catch (err) {
+    loadRanking("/api/ranking", "上位10位（全体）");
+
+  } catch {
     msg.textContent = "通信エラー：登録できませんでした";
     msg.style.color = "red";
   }
