@@ -1,201 +1,81 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>管理者ページ</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="style.css">
-
-  <style>
-    #admin-box {
-      max-width: 520px;
-      margin: 40px auto;
-      padding: 25px;
-      border-radius: 14px;
-      background: #f8f8f8;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-    #pass {
-      width: 90%;
-      font-size: 1.2rem;
-      padding: 14px;
-      margin-bottom: 8px;
-      border-radius: 10px;
-      border: 2px solid #ccc;
-    }
-    #toggle-pass {
-      margin-bottom: 18px;
-      font-size: 0.95rem;
-      color: #0077ff;
-      cursor: pointer;
-    }
-    button {
-      width: 90%;
-      padding: 14px;
-      font-size: 1.1rem;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    #deleteBtn {
-      background: #ff4444;
-      color: #fff;
-    }
-    #loadMistakeBtn {
-      background: #4444ff;
-      color: #fff;
-    }
-    button:active {
-      transform: scale(0.97);
-      opacity: 0.85;
-    }
-    #msg {
-      margin-top: 18px;
-      font-size: 1.1rem;
-      min-height: 1.5em;
-    }
-    #mistake-list {
-      margin-top: 25px;
-      text-align: left;
-    }
-    #mistake-list div {
-      background: #fff;
-      padding: 10px;
-      margin-bottom: 6px;
-      border-radius: 8px;
-      font-size: 1rem;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>管理者ページ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
 
-<!-- 🔒 ログインチェック -->
 <script>
 if (sessionStorage.getItem("ADMIN_LOGIN") !== "YES") {
   alert("ログインが必要です");
-  window.location.href = "admin-login.html";
+  location.href = "admin-login.html";
 }
 </script>
 
-<h1 style="text-align:center;">管理者ページ</h1>
+<h1>管理者ページ</h1>
 
-<div id="admin-box">
+<h2>📊 問題別ミス分析</h2>
 
-  <p><strong>管理者操作</strong></p>
+<table border="1" cellpadding="8">
+  <thead>
+    <tr>
+      <th>単語</th>
+      <th>ミス回数</th>
+    </tr>
+  </thead>
+  <tbody id="miss-table">
+    <tr><td colspan="2">読み込み中...</td></tr>
+  </tbody>
+</table>
 
-  <!-- パスワード入力 -->
-  <input id="pass" type="password" placeholder="管理パスワード" autocomplete="off">
+<hr>
 
-  <!-- 表示切替 -->
-  <div id="toggle-pass">パスワードを表示</div>
+<h2>⚠ ランキング全削除</h2>
+<input id="pass" type="password" placeholder="管理パスワード">
+<button id="deleteBtn">削除</button>
+<div id="msg"></div>
 
-  <!-- ランキング削除 -->
-  <button id="deleteBtn">ランキング全削除</button>
-
-  <!-- ミス分析 -->
-  <button id="loadMistakeBtn">問題別ミス分析を表示</button>
-
-  <!-- メッセージ -->
-  <div id="msg"></div>
-
-  <!-- ミス分析表示 -->
-  <div id="mistake-list"></div>
-
-</div>
-
-<div style="text-align:center;margin-top:25px;">
-  <a href="index.html">← ホームに戻る</a>
-</div>
+<br>
+<a href="index.html">← 戻る</a>
 
 <script>
 const passInput = document.getElementById("pass");
-const toggle = document.getElementById("toggle-pass");
-const msg = document.getElementById("msg");
-const list = document.getElementById("mistake-list");
 
-// 表示・非表示
-toggle.onclick = () => {
-  if (passInput.type === "password") {
-    passInput.type = "text";
-    toggle.textContent = "パスワードを隠す";
-  } else {
-    passInput.type = "password";
-    toggle.textContent = "パスワードを表示";
+// ミス分析読み込み
+async function loadMiss() {
+  const pass = passInput.value || prompt("管理パスワード");
+  if (!pass) return;
+
+  const res = await fetch(`/api/admin/miss?pass=${encodeURIComponent(pass)}`);
+  if (!res.ok) {
+    alert("パスワードが違います");
+    return;
   }
-};
 
-// ===============================
-// ランキング削除
-// ===============================
+  const data = await res.json();
+  document.getElementById("miss-table").innerHTML =
+    data.map(x => `
+      <tr>
+        <td>${x.word}</td>
+        <td>${x.miss_count}</td>
+      </tr>
+    `).join("");
+}
+loadMiss();
+
+// 削除
 document.getElementById("deleteBtn").onclick = async () => {
-  const pass = passInput.value.trim();
-  msg.textContent = "";
-  list.innerHTML = "";
-
-  if (!pass) {
-    msg.textContent = "パスワードを入力してください";
-    msg.style.color = "red";
-    return;
-  }
-
-  if (!confirm("本当にランキングを全削除しますか？")) return;
-
+  const pass = passInput.value;
   const res = await fetch("/api/admin/delete", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
     body: JSON.stringify({ pass })
   });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    msg.textContent = data.error || "削除エラー";
-    msg.style.color = "red";
-    return;
-  }
-
-  msg.textContent = "ランキングを削除しました";
-  msg.style.color = "green";
-};
-
-// ===============================
-// 問題別ミス分析
-// ===============================
-document.getElementById("loadMistakeBtn").onclick = async () => {
-  const pass = passInput.value.trim();
-  msg.textContent = "";
-  list.innerHTML = "";
-
-  if (!pass) {
-    msg.textContent = "パスワードを入力してください";
-    msg.style.color = "red";
-    return;
-  }
-
-  const res = await fetch("/api/admin/mistakes", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pass })
-  });
-
-  if (!res.ok) {
-    msg.textContent = "パスワードが違います";
-    msg.style.color = "red";
-    return;
-  }
-
-  const data = await res.json();
-
-  if (data.length === 0) {
-    list.innerHTML = "<div>ミスデータはまだありません</div>";
-    return;
-  }
-
-  list.innerHTML = data.map((d, i) =>
-    `<div>${i + 1}. ${d.word}（${d.wrong_count} 回）</div>`
-  ).join("");
+  const r = await res.json();
+  document.getElementById("msg").textContent =
+    r.result === "deleted" ? "削除しました" : "失敗";
 };
 </script>
 
