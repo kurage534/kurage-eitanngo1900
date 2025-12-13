@@ -41,22 +41,8 @@
 
 <script>
 const msg = document.getElementById("msg");
-const nameInput = document.getElementById("name");
-const sendBtn = document.getElementById("send");
 
-// --------------------
-// クイズ完了チェック
-// --------------------
-if (localStorage.getItem("quizFinished") !== "yes") {
-  nameInput.style.display = "none";
-  sendBtn.style.display = "none";
-  msg.textContent = "クイズをクリアした場合のみ登録できます";
-  msg.style.color = "red";
-}
-
-// --------------------
 // ランキング取得
-// --------------------
 async function loadRanking() {
   try {
     const res = await fetch("/api/ranking");
@@ -76,18 +62,15 @@ async function loadRanking() {
           時間：${r.time ?? "?"} 秒
         </div>
       `).join("");
-
   } catch {
     document.getElementById("list").textContent = "読み込みに失敗しました";
   }
 }
 loadRanking();
 
-// --------------------
 // ランキング登録
-// --------------------
-sendBtn.addEventListener("click", async () => {
-  const name = nameInput.value.trim();
+document.getElementById("send").addEventListener("click", async () => {
+  const name = document.getElementById("name").value.trim();
   const score = Number(localStorage.getItem("score"));
   const time = Number(localStorage.getItem("time"));
 
@@ -105,22 +88,13 @@ sendBtn.addEventListener("click", async () => {
 
   const result = await res.json();
 
-  if (result.result === "duplicate") {
-    msg.textContent = "同じ記録は登録済みです";
-    msg.style.color = "red";
-    return;
-  }
-
   if (result.result === "ok") {
     msg.textContent = "登録しました！";
     msg.style.color = "green";
-
-    // ★ 再登録防止
-    nameInput.style.display = "none";
-    sendBtn.style.display = "none";
-    localStorage.removeItem("quizFinished");
-
     loadRanking();
+  } else if (result.result === "duplicate") {
+    msg.textContent = "同じ記録は登録済みです";
+    msg.style.color = "red";
   } else {
     msg.textContent = "登録に失敗しました";
     msg.style.color = "red";
