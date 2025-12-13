@@ -4,11 +4,13 @@
   <meta charset="UTF-8">
   <title>英単語ゲーム</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <h1>英単語ゲーム</h1>
 
+<!-- ===== 設定画面 ===== -->
 <div id="setup-area">
   <label>出題数：</label>
   <select id="qcount">
@@ -17,16 +19,28 @@
     <option value="20">20問</option>
     <option value="all">全問</option>
   </select>
+
+  <label>出題形式：</label>
+  <select id="mode">
+    <option value="text">記述式</option>
+    <option value="choice">四択</option>
+  </select>
+
   <button id="start-btn">開始</button>
 </div>
 
+<!-- ===== ゲーム画面 ===== -->
 <div id="game-area" style="display:none;">
   <div id="timer">00:00</div>
 
   <p id="question"></p>
 
+  <!-- 記述式 -->
   <input id="answer" autocomplete="off">
   <button id="submit-answer">送信</button>
+
+  <!-- 四択 -->
+  <div id="choices"></div>
 
   <div id="game-message"></div>
 
@@ -35,35 +49,31 @@
   <div id="score-area"></div>
 
   <button id="to-ranking" style="display:none;">ランキングへ</button>
+  <button id="restart-btn" style="display:none;">もう一度プレイ</button>
 </div>
 
-  <button id="restart-btn" style="display:none;">もう一度プレイ</button>
-
-
 <script src="game.js"></script>
-  <hr style="margin:30px 0;">
 
+<hr style="margin:30px 0;">
+
+<!-- ===== 管理者リンク ===== -->
 <div style="text-align:center;">
   <a href="admin-login.html"
      style="font-size:0.9rem; color:#666; text-decoration:none;">
-    管理者ページ
+    管理者ログイン
   </a>
 </div>
 
-  <!-- 管理者専用リンク -->
 <div id="admin-link" style="display:none; text-align:center; margin-top:20px;">
   <a href="admin.html">🔒 管理者ページ</a>
 </div>
 
 <script>
+  // 管理者ログイン済みのみ表示
   if (sessionStorage.getItem("ADMIN_LOGIN") === "YES") {
     document.getElementById("admin-link").style.display = "block";
   }
 </script>
 
-
 </body>
 </html>
-
-
-
