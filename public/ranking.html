@@ -1,39 +1,118 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head><meta charset="UTF-8"><title>ランキング</title></head>
+<head>
+  <meta charset="UTF-8">
+  <title>ランキング</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
 <body>
 
 <h1>ランキング</h1>
 
-<input id="name" placeholder="名前">
-<button id="send">登録</button>
+<!-- 登録エリア -->
+<div id="register-area">
+  <input id="name" placeholder="名前（必須）" autocomplete="off">
+  <button id="send">ランキングに登録する</button>
+</div>
+
 <div id="msg"></div>
-<div id="my-rank"></div>
-<div id="list"></div>
+
+<!-- ★ 自分の順位 -->
+<div id="my-rank" style="margin:20px 0;font-size:1.2rem;"></div>
+
+<hr>
+
+<h2>上位10位</h2>
+<div id="list">読み込み中...</div>
+
+<br>
+<a href="index.html">← ホームへ戻る</a>
 
 <script>
-async function load(){
-  const r=await fetch("/api/ranking");
-  const d=await r.json();
-  document.getElementById("list").innerHTML=d.map((x,i)=>`${i+1}位 ${x.name} ${x.score}点 ${x.time}s`).join("<br>");
+function esc(s) {
+  return s.replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
 }
-load();
 
-document.getElementById("send").onclick=async()=>{
-  if(localStorage.getItem("CAN_REGISTER")!=="YES")return;
-  const name=document.getElementById("name").value;
-  const score=+localStorage.getItem("score");
-  const time=+localStorage.getItem("time");
+const CAN = localStorage.getItem("CAN_REGISTER");
+const registerArea = document.getElementById("register-area");
+const msg = document.getElementById("msg");
 
-  const r=await fetch("/api/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,score,time})});
-  const res=await r.json();
+if (CAN !== "YES") {
+  registerArea.style.display = "none";
+  msg.textContent = "※ クイズを1回クリアした時だけ登録できます";
+}
 
-  const mr=await fetch("/api/my-rank",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({score,time})});
-  const rank=await mr.json();
-  document.getElementById("my-rank").textContent=`あなたの順位：${rank.rank}位`;
-  localStorage.setItem("CAN_REGISTER","NO");
-  load();
+// ランキング読み込み
+async function loadRanking() {
+  const res = await fetch("/api/ranking");
+  const data = await res.json();
+
+  if (!Array.isArray(data)) {
+    document.getElementById("list").textContent = "読み込み失敗";
+    return;
+  }
+
+  // 上位10
+  document.getElementById("list").innerHTML =
+    data.slice(0,10).map((x,i)=>`
+      <div>
+        <b>${i+1}位</b><br>
+        ${esc(x.name)} / ${x.score}点 / ${x.time ?? "-"}秒
+      </div>
+    `).join("");
+
+  // ★ 自分の順位計算
+  const myName = localStorage.getItem("LAST_NAME");
+  const myScore = Number(localStorage.getItem("score"));
+  const myTime = Number(localStorage.getItem("time"));
+
+  const idx = data.findIndex(x =>
+    x.name === myName &&
+    x.score === myScore &&
+    Number(x.time) === myTime
+  );
+
+  if (idx >= 0) {
+    document.getElementById("my-rank").textContent =
+      `🎉 あなたの順位：${idx + 1}位`;
+  }
+}
+loadRanking();
+
+// 登録
+document.getElementById("send").onclick = async () => {
+  const name = document.getElementById("name").value.trim();
+  const score = Number(localStorage.getItem("score"));
+  const time = Number(localStorage.getItem("time"));
+
+  if (!name) {
+    msg.textContent = "名前を入力してください";
+    return;
+  }
+
+  const res = await fetch("/api/submit", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ name, score, time })
+  });
+
+  const r = await res.json();
+
+  if (r.result === "ok") {
+    msg.textContent = "登録しました！";
+    localStorage.setItem("CAN_REGISTER","NO");
+    localStorage.setItem("LAST_NAME", name);
+    registerArea.style.display = "none";
+    loadRanking();
+  } else if (r.result === "duplicate") {
+    msg.textContent = "同じ記録は登録済みです";
+  } else {
+    msg.textContent = "登録失敗";
+  }
 };
 </script>
+
 </body>
 </html>
