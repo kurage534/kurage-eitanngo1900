@@ -8,7 +8,7 @@
 
   <style>
     #admin-box {
-      max-width: 420px;
+      max-width: 520px;
       margin: 40px auto;
       padding: 25px;
       border-radius: 14px;
@@ -30,35 +30,48 @@
       color: #0077ff;
       cursor: pointer;
     }
-    #deleteBtn {
+    button {
       width: 90%;
-      padding: 16px;
-      font-size: 1.2rem;
-      background: #ff4444;
-      color: #fff;
+      padding: 14px;
+      font-size: 1.1rem;
       border: none;
       border-radius: 10px;
       cursor: pointer;
       margin-top: 10px;
     }
-    #deleteBtn:active {
+    #deleteBtn {
+      background: #ff4444;
+      color: #fff;
+    }
+    #loadMistakeBtn {
+      background: #4444ff;
+      color: #fff;
+    }
+    button:active {
       transform: scale(0.97);
-      opacity: 0.8;
+      opacity: 0.85;
     }
     #msg {
-      margin-top: 20px;
-      font-size: 1.2rem;
+      margin-top: 18px;
+      font-size: 1.1rem;
       min-height: 1.5em;
     }
-
-    a {
-      font-size: 1.1rem;
+    #mistake-list {
+      margin-top: 25px;
+      text-align: left;
+    }
+    #mistake-list div {
+      background: #fff;
+      padding: 10px;
+      margin-bottom: 6px;
+      border-radius: 8px;
+      font-size: 1rem;
     }
   </style>
 </head>
 <body>
 
-<!-- 🔒 ログインチェック（最重要） -->
+<!-- 🔒 ログインチェック -->
 <script>
 if (sessionStorage.getItem("ADMIN_LOGIN") !== "YES") {
   alert("ログインが必要です");
@@ -66,22 +79,30 @@ if (sessionStorage.getItem("ADMIN_LOGIN") !== "YES") {
 }
 </script>
 
-<h1>管理者ページ</h1>
+<h1 style="text-align:center;">管理者ページ</h1>
 
 <div id="admin-box">
-  <p>ランキングを全削除できます</p>
+
+  <p><strong>管理者操作</strong></p>
 
   <!-- パスワード入力 -->
   <input id="pass" type="password" placeholder="管理パスワード" autocomplete="off">
 
-  <!-- 表示・非表示切り替え -->
+  <!-- 表示切替 -->
   <div id="toggle-pass">パスワードを表示</div>
 
-  <!-- 削除 -->
+  <!-- ランキング削除 -->
   <button id="deleteBtn">ランキング全削除</button>
 
-  <!-- 結果表示 -->
+  <!-- ミス分析 -->
+  <button id="loadMistakeBtn">問題別ミス分析を表示</button>
+
+  <!-- メッセージ -->
   <div id="msg"></div>
+
+  <!-- ミス分析表示 -->
+  <div id="mistake-list"></div>
+
 </div>
 
 <div style="text-align:center;margin-top:25px;">
@@ -89,11 +110,13 @@ if (sessionStorage.getItem("ADMIN_LOGIN") !== "YES") {
 </div>
 
 <script>
-// パスワードの表示/非表示切り替え
 const passInput = document.getElementById("pass");
 const toggle = document.getElementById("toggle-pass");
+const msg = document.getElementById("msg");
+const list = document.getElementById("mistake-list");
 
-toggle.addEventListener("click", () => {
+// 表示・非表示
+toggle.onclick = () => {
   if (passInput.type === "password") {
     passInput.type = "text";
     toggle.textContent = "パスワードを隠す";
@@ -101,14 +124,15 @@ toggle.addEventListener("click", () => {
     passInput.type = "password";
     toggle.textContent = "パスワードを表示";
   }
-});
+};
 
-// 削除ボタン
-document.getElementById("deleteBtn").addEventListener("click", async () => {
+// ===============================
+// ランキング削除
+// ===============================
+document.getElementById("deleteBtn").onclick = async () => {
   const pass = passInput.value.trim();
-  const msg = document.getElementById("msg");
-
   msg.textContent = "";
+  list.innerHTML = "";
 
   if (!pass) {
     msg.textContent = "パスワードを入力してください";
@@ -116,29 +140,63 @@ document.getElementById("deleteBtn").addEventListener("click", async () => {
     return;
   }
 
-  // 削除前確認
-  if (!confirm("本当にランキングを全削除しますか？\nこの操作は取り消せません。")) {
-    return;
-  }
+  if (!confirm("本当にランキングを全削除しますか？")) return;
 
-  // サーバーへ削除リクエスト
   const res = await fetch("/api/admin/delete", {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ pass })
   });
 
   const data = await res.json();
 
   if (!res.ok) {
-    msg.textContent = data.error || "エラーが発生しました";
+    msg.textContent = data.error || "削除エラー";
     msg.style.color = "red";
     return;
   }
 
-  msg.textContent = "ランキングを削除しました！";
+  msg.textContent = "ランキングを削除しました";
   msg.style.color = "green";
-});
+};
+
+// ===============================
+// 問題別ミス分析
+// ===============================
+document.getElementById("loadMistakeBtn").onclick = async () => {
+  const pass = passInput.value.trim();
+  msg.textContent = "";
+  list.innerHTML = "";
+
+  if (!pass) {
+    msg.textContent = "パスワードを入力してください";
+    msg.style.color = "red";
+    return;
+  }
+
+  const res = await fetch("/api/admin/mistakes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pass })
+  });
+
+  if (!res.ok) {
+    msg.textContent = "パスワードが違います";
+    msg.style.color = "red";
+    return;
+  }
+
+  const data = await res.json();
+
+  if (data.length === 0) {
+    list.innerHTML = "<div>ミスデータはまだありません</div>";
+    return;
+  }
+
+  list.innerHTML = data.map((d, i) =>
+    `<div>${i + 1}. ${d.word}（${d.wrong_count} 回）</div>`
+  ).join("");
+};
 </script>
 
 </body>
