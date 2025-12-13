@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>管理者ログイン</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    #box {
+      max-width: 400px;
+      margin: 40px auto;
+      padding: 25px;
+      border-radius: 14px;
+      background: #f8f8f8;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    input {
+      width: 90%;
+      padding: 14px;
+      font-size: 1.2rem;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+    button {
+      width: 90%;
+      padding: 14px;
+      background: #0066ff;
+      color: #fff;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>管理者ログイン</h1>
+
+<div id="box">
+
+  <input type="password" id="pass" placeholder="パスワードを入力">
+
+  <button id="loginBtn">ログイン</button>
+
+  <p id="msg" style="color:red;margin-top:10px;"></p>
+
+</div>
+
+<script>
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  const pass = document.getElementById("pass").value.trim();
+  const msg = document.getElementById("msg");
+
+  msg.textContent = "";
+
+  const res = await fetch("/api/admin/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ pass })
+  });
+
+  const data = await res.json();
+
+  if (data.result === "ok") {
+    // ログイン成功 → sessionStorage にトークン保存
+    sessionStorage.setItem("ADMIN_LOGIN", "YES");
+
+    window.location.href = "admin.html";
+  } else {
+    msg.textContent = data.error || "ログインに失敗しました";
+  }
+});
+</script>
+
+</body>
+</html>
