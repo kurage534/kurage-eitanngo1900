@@ -47,6 +47,19 @@
   </a>
 </div>
 
+  <!-- 管理者専用リンク -->
+<div id="admin-link" style="display:none; text-align:center; margin-top:20px;">
+  <a href="admin.html">🔒 管理者ページ</a>
+</div>
+
+<script>
+  if (sessionStorage.getItem("ADMIN_LOGIN") === "YES") {
+    document.getElementById("admin-link").style.display = "block";
+  }
+</script>
+
+
 </body>
 </html>
+
 
