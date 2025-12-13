@@ -124,7 +124,7 @@ DO UPDATE SET miss_count = miss_log.miss_count + 1
 // 管理者ログイン
 // ===============================
 app.post("/api/admin/login", (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
   if (req.body.pass === ADMIN_PASS) {
     return res.json({ result: "ok" });
   }
@@ -135,7 +135,7 @@ app.post("/api/admin/login", (req, res) => {
 // 管理者：ミス分析
 // ===============================
 app.get("/api/admin/miss", async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
   if (req.query.pass !== ADMIN_PASS) {
     return res.sendStatus(403);
   }
@@ -150,7 +150,7 @@ app.get("/api/admin/miss", async (req, res) => {
 // 管理者：ランキング削除
 // ===============================
 app.post("/api/admin/delete", async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
   if (req.body.pass !== ADMIN_PASS) {
     return res.sendStatus(403);
   }
@@ -167,7 +167,7 @@ app.listen(PORT, () => {
 // 管理者：ランキングCSVエクスポート
 // ===============================
 app.get("/api/admin/export/ranking", async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
   if (req.query.pass !== ADMIN_PASS) {
     return res.sendStatus(403);
   }
@@ -190,7 +190,7 @@ app.get("/api/admin/export/ranking", async (req, res) => {
 // 管理者：ミス分析CSVエクスポート
 // ===============================
 app.get("/api/admin/export/miss", async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
   if (req.query.pass !== ADMIN_PASS) {
     return res.sendStatus(403);
   }
@@ -208,6 +208,7 @@ app.get("/api/admin/export/miss", async (req, res) => {
   res.setHeader("Content-Disposition", "attachment; filename=miss_analysis.csv");
   res.send(csv);
 });
+
 
 
 
