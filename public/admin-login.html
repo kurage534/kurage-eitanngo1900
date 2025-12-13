@@ -1,53 +1,30 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>管理者ログイン</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="style.css">
-
-  <style>
-    #box {
-      max-width: 400px;
-      margin: 40px auto;
-      padding: 25px;
-      border-radius: 14px;
-      background: #f8f8f8;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-    input {
-      width: 90%;
-      padding: 14px;
-      font-size: 1.2rem;
-      border: 2px solid #ccc;
-      border-radius: 10px;
-      margin-bottom: 10px;
-    }
-    button {
-      width: 90%;
-      padding: 14px;
-      background: #0066ff;
-      color: #fff;
-      font-size: 1.2rem;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>管理者ログイン</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <h1>管理者ログイン</h1>
 
-<div id="box">
-
-  <input type="password" id="pass" placeholder="パスワードを入力">
+<div id="admin-box">
+  <input
+    id="pass"
+    type="password"
+    placeholder="管理者パスワード"
+    autocomplete="off"
+  >
 
   <button id="loginBtn">ログイン</button>
 
-  <p id="msg" style="color:red;margin-top:10px;"></p>
+  <div id="msg"></div>
+</div>
 
+<div style="text-align:center;margin-top:20px;">
+  <a href="index.html">← 戻る</a>
 </div>
 
 <script>
@@ -57,21 +34,34 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 
   msg.textContent = "";
 
-  const res = await fetch("/api/admin/login", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ pass })
-  });
+  if (!pass) {
+    msg.textContent = "パスワードを入力してください";
+    msg.style.color = "red";
+    return;
+  }
 
-  const data = await res.json();
+  try {
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pass })
+    });
 
-  if (data.result === "ok") {
-    // ログイン成功 → sessionStorage にトークン保存
-    sessionStorage.setItem("ADMIN_LOGIN", "YES");
+    const data = await res.json();
 
-    window.location.href = "admin.html";
-  } else {
-    msg.textContent = data.error || "ログインに失敗しました";
+    if (res.ok && data.result === "ok") {
+      // ★ ここが最重要
+      sessionStorage.setItem("ADMIN_LOGIN", "YES");
+      location.href = "admin.html";
+      return;
+    }
+
+    msg.textContent = "パスワードが違います";
+    msg.style.color = "red";
+
+  } catch (e) {
+    msg.textContent = "通信エラー";
+    msg.style.color = "red";
   }
 });
 </script>
