@@ -161,3 +161,44 @@ app.post("/api/admin/delete", async (req, res) => {
 
 app.listen(PORT, () => console.log("server running"));
 
+// ===============================
+// ミス記録（単語別）
+// ===============================
+app.post("/api/miss", async (req, res) => {
+  const { word } = req.body;
+  if (!word) return res.sendStatus(400);
+
+  try {
+    // すでにあるか確認
+    const r = await pool.query(
+      "SELECT id FROM miss_log WHERE word=$1",
+      [word]
+    );
+
+    if (r.rows.length > 0) {
+      // あれば +1
+      await pool.query(
+        `UPDATE miss_log
+         SET miss_count = miss_count + 1,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE word=$1`,
+        [word]
+      );
+    } else {
+      // なければ新規
+      await pool.query(
+        `INSERT INTO miss_log(word, miss_count)
+         VALUES ($1, 1)`,
+        [word]
+      );
+    }
+
+    res.json({ result: "ok" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "miss log error" });
+  }
+});
+
+
+
