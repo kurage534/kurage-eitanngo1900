@@ -2,40 +2,63 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>英単語ゲーム</title>
+
+  <!-- ★ viewport（重要） -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>英単語クイズ</title>
   <link rel="stylesheet" href="style.css">
+
+  <style>
+    body {
+      text-align: center;
+    }
+    #game {
+      display: none;
+    }
+    input, button {
+      font-size: 1.3rem;
+      padding: 14px;
+      margin: 8px;
+      width: 90%;
+    }
+  </style>
 </head>
 <body>
 
-<h1>英単語ゲーム</h1>
+<h1>英単語クイズ</h1>
 
-<div id="setup-area">
-  <label for="qcount">出題数：</label>
-  <select id="qcount">
-    <option value="5">5問</option>
-    <option value="10" selected>10問</option>
-    <option value="20">20問</option>
-    <option value="all">全問</option>
-  </select>
-
-  <button id="start-btn">開始</button>
+<!-- 開始画面 -->
+<div id="start">
+  <button id="startBtn">▶ クイズ開始</button>
 </div>
 
-<div id="game-area" style="display:none;">
-  <p id="question"></p>
+<!-- ゲーム画面 -->
+<div id="game">
+  <p id="timer">時間：0 秒</p>
+  <h2 id="question">---</h2>
 
-  <input id="answer" placeholder="答え">
-  <button id="submit-answer">送信</button>
-
-  <div id="game-message"></div>
-
-  <button id="next-btn" style="display:none;">次へ</button>
-
-  <div id="score-area"></div>
-
-  <button id="to-ranking" style="display:none;">ランキングへ</button>
+  <input id="answer" placeholder="英単語を入力">
+  <button id="checkBtn">決定</button>
 </div>
 
 <script src="game.js"></script>
+
+<script>
+  // ★ 開始ボタンでゲーム開始
+  document.getElementById("startBtn").addEventListener("click", () => {
+    document.getElementById("start").style.display = "none";
+    document.getElementById("game").style.display = "block";
+
+    // game.js の init() を呼ぶ
+    init();
+  });
+
+  // 決定ボタン
+  document.getElementById("checkBtn").addEventListener("click", () => {
+    checkAnswer();
+  });
+</script>
+
 </body>
 </html>
