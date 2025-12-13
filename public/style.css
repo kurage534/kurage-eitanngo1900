@@ -1,5 +1,5 @@
 /* ============================
-   全体共通
+   共通
 ============================ */
 * {
   box-sizing: border-box;
@@ -18,277 +18,94 @@ h1, h2 {
 }
 
 /* ============================
-   ボタン・入力
+   レイアウト
 ============================ */
-button {
+#setup-area,
+#game-area {
+  max-width: 520px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* ============================
+   入力・ボタン
+============================ */
+input, select {
   width: 100%;
   padding: 16px;
-  margin: 10px 0;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
+  border-radius: 12px;
+  border: 2px solid #ccc;
+  margin-bottom: 14px;
+}
+
+button {
+  width: 100%;
+  padding: 18px;
+  font-size: 1.3rem;
   border-radius: 14px;
   border: none;
-  background: #0077ff;
   color: #fff;
   cursor: pointer;
+  margin-bottom: 12px;
 }
 
 button:active {
   transform: scale(0.97);
-  opacity: 0.85;
 }
 
-input, select {
-  width: 100%;
-  padding: 14px;
-  font-size: 1.2rem;
-  border-radius: 12px;
-  border: 2px solid #ccc;
-  margin-top: 8px;
-}
+/* 色 */
+#start-btn { background:#2ecc71; }
+#submit-answer { background:#3498db; }
+#next-btn { background:#f39c12; }
+#to-ranking { background:#9b59b6; }
+#restart-btn { background:#1abc9c; }
 
-/* ============================
-   レイアウト
-============================ */
-#setup-area,
-#game-area,
-#register-area,
-#admin-box {
-  max-width: 480px;
-  margin: 0 auto;
-  background: #fff;
-  padding: 18px;
-  border-radius: 16px;
-  box-shadow: 0 0 12px rgba(0,0,0,0.08);
+.choice-btn {
+  background:#34495e;
+  font-size:1.2rem;
 }
 
 /* ============================
-   クイズ画面
+   クイズ
 ============================ */
 #timer {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   text-align: center;
-  margin-bottom: 12px;
   font-weight: bold;
+  margin-bottom: 10px;
 }
 
 #question {
   font-size: 1.4rem;
-  margin: 18px 0;
+  font-weight: bold;
+  margin: 16px 0;
 }
 
 #game-message {
-  margin-top: 14px;
-  font-size: 1.3rem;
   text-align: center;
+  font-size: 1.2rem;
+  margin: 14px 0;
 }
 
 #score-area {
-  margin-top: 18px;
-  font-size: 1.3rem;
   text-align: center;
+  font-size: 1.3rem;
+  margin-top: 16px;
 }
 
-/* 次へボタンは目立たせる */
-#next-btn {
-  background: #00aa55;
-}
-
-/* 音声ボタン */
-#soundBtn {
-  background: #ffaa00;
+/* 四択 */
+#choices {
   margin-top: 10px;
 }
 
-/* ============================
-   ランキング
-============================ */
-#list div {
-  background: #f1f1f1;
-  padding: 14px;
-  margin: 10px 0;
-  border-radius: 12px;
-  font-size: 1.2rem;
-}
-
-#my-rank {
-  background: #e8f3ff;
-  padding: 14px;
-  border-radius: 12px;
-  text-align: center;
-  font-size: 1.3rem;
-}
-
-/* ============================
-   管理者
-============================ */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 14px;
-}
-
-th, td {
-  padding: 12px;
-  border-bottom: 1px solid #ddd;
-  text-align: center;
-  font-size: 1.1rem;
-}
-
-th {
-  background: #f0f0f0;
-}
-
-/* ============================
-   PCでも見やすく
-============================ */
+/* PC */
 @media (min-width: 768px) {
   body {
     max-width: 700px;
     margin: 0 auto;
   }
 }
-/* ==============================
-   共通（スマホ最適化）
-============================== */
-
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #f5f5f5;
-  margin: 0;
-  padding: 10px;
-}
-
-h1 {
-  text-align: center;
-  font-size: 1.8rem;
-  margin-bottom: 20px;
-}
-
-/* 中央寄せコンテナ */
-#setup-area,
-#game-area {
-  max-width: 500px;
-  margin: 0 auto;
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-/* 出題文 */
-#question {
-  font-size: 1.4rem;
-  font-weight: bold;
-  margin-bottom: 15px;
-  line-height: 1.5;
-}
-
-/* 入力欄 */
-input,
-select {
-  width: 100%;
-  font-size: 1.3rem;
-  padding: 16px;
-  margin-bottom: 15px;
-  border-radius: 12px;
-  border: 2px solid #ccc;
-  box-sizing: border-box;
-}
-
-/* ボタン共通 */
-button {
-  width: 100%;
-  font-size: 1.3rem;
-  padding: 18px;
-  margin-bottom: 12px;
-  border-radius: 14px;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-  transition: transform 0.05s ease;
-}
-
-button:active {
-  transform: scale(0.97);
-}
-
-/* 個別ボタン色 */
-#start-btn {
-  background: #2ecc71;
-  color: #fff;
-}
-
-#submit-answer {
-  background: #3498db;
-  color: #fff;
-}
-
-#next-btn {
-  background: #f39c12;
-  color: #fff;
-}
-
-#to-ranking {
-  background: #9b59b6;
-  color: #fff;
-}
-
-#restart-btn {
-  background: #1abc9c;
-  color: #fff;
-}
-
-/* メッセージ */
-#game-message {
-  font-size: 1.2rem;
-  margin: 15px 0;
-  text-align: center;
-}
-
-/* スコア */
-#score-area {
-  font-size: 1.3rem;
-  margin-top: 15px;
-  text-align: center;
-}
-
-/* タイマー */
-#timer {
-  text-align: center;
-  font-size: 1.4rem;
-  margin-bottom: 15px;
-}
-
-/* 音声ボタン */
-#soundBtn {
-  width: 100%;
-  font-size: 1.2rem;
-  padding: 14px;
-  margin-top: 10px;
-  background: #555;
-  color: #fff;
-  border-radius: 12px;
-}
-
-/* リンク */
-a {
-  display: block;
-  text-align: center;
-  font-size: 1.1rem;
-  margin-top: 20px;
-}
-
-/* ==============================
-   PCでは少し抑える
-============================== */
-@media (min-width: 768px) {
-  button {
-    font-size: 1.1rem;
-    padding: 14px;
-  }
-  input {
-    font-size: 1.1rem;
-  }
-}
-
-
