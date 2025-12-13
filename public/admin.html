@@ -100,8 +100,22 @@ document.getElementById("csvMiss").onclick = () => {
   location.href = `/api/admin/export/miss?pass=${encodeURIComponent(pass)}`;
 };
 </script>
+  <button id="export">CSVエクスポート</button>
+
+<script>
+document.getElementById("export").addEventListener("click", () => {
+  const pass = document.getElementById("pass").value;
+  if (!pass) {
+    alert("管理パスワードを入力してください");
+    return;
+  }
+  location.href = `/api/admin/export/ranking?pass=${encodeURIComponent(pass)}`;
+});
+</script>
+
 
 
 </body>
 </html>
+
 
