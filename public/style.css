@@ -147,3 +147,148 @@ th {
     margin: 0 auto;
   }
 }
+/* ==============================
+   共通（スマホ最適化）
+============================== */
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f5f5f5;
+  margin: 0;
+  padding: 10px;
+}
+
+h1 {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+}
+
+/* 中央寄せコンテナ */
+#setup-area,
+#game-area {
+  max-width: 500px;
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* 出題文 */
+#question {
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+/* 入力欄 */
+input,
+select {
+  width: 100%;
+  font-size: 1.3rem;
+  padding: 16px;
+  margin-bottom: 15px;
+  border-radius: 12px;
+  border: 2px solid #ccc;
+  box-sizing: border-box;
+}
+
+/* ボタン共通 */
+button {
+  width: 100%;
+  font-size: 1.3rem;
+  padding: 18px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.05s ease;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+/* 個別ボタン色 */
+#start-btn {
+  background: #2ecc71;
+  color: #fff;
+}
+
+#submit-answer {
+  background: #3498db;
+  color: #fff;
+}
+
+#next-btn {
+  background: #f39c12;
+  color: #fff;
+}
+
+#to-ranking {
+  background: #9b59b6;
+  color: #fff;
+}
+
+#restart-btn {
+  background: #1abc9c;
+  color: #fff;
+}
+
+/* メッセージ */
+#game-message {
+  font-size: 1.2rem;
+  margin: 15px 0;
+  text-align: center;
+}
+
+/* スコア */
+#score-area {
+  font-size: 1.3rem;
+  margin-top: 15px;
+  text-align: center;
+}
+
+/* タイマー */
+#timer {
+  text-align: center;
+  font-size: 1.4rem;
+  margin-bottom: 15px;
+}
+
+/* 音声ボタン */
+#soundBtn {
+  width: 100%;
+  font-size: 1.2rem;
+  padding: 14px;
+  margin-top: 10px;
+  background: #555;
+  color: #fff;
+  border-radius: 12px;
+}
+
+/* リンク */
+a {
+  display: block;
+  text-align: center;
+  font-size: 1.1rem;
+  margin-top: 20px;
+}
+
+/* ==============================
+   PCでは少し抑える
+============================== */
+@media (min-width: 768px) {
+  button {
+    font-size: 1.1rem;
+    padding: 14px;
+  }
+  input {
+    font-size: 1.1rem;
+  }
+}
+
+
