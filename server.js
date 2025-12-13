@@ -200,5 +200,27 @@ app.post("/api/miss", async (req, res) => {
   }
 });
 
+// ===============================
+// 管理者：ミス分析取得
+// ===============================
+app.get("/api/admin/miss", async (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
+  const pass = req.query.pass;
+
+  if (pass !== ADMIN_PASS) {
+    return res.status(403).json({ error: "forbidden" });
+  }
+
+  const result = await pool.query(
+    `SELECT word, miss_count
+     FROM miss_log
+     ORDER BY miss_count DESC`
+  );
+
+  res.json(result.rows);
+});
+
+
+
 
 
