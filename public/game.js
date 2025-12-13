@@ -152,3 +152,11 @@ document.getElementById("to-ranking").addEventListener("click", () => {
 
   window.location.href = "ranking.html";
 });
+
+// クイズ終了時
+clearTime = Math.floor((Date.now() - timerStart) / 1000);
+
+// ★ 追加：ランキング登録を許可
+localStorage.setItem("CAN_REGISTER", "YES");
+
+
