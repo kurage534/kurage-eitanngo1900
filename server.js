@@ -109,14 +109,17 @@ app.post("/api/submit", async (req, res) => {
 
 
 // ===============================
-// 4. ランキング取得（上位10）
+// 4. ランキング取得（タイム優先）
 // ===============================
 app.get("/api/ranking", async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT name, score, time, created_at
        FROM ranking
-       ORDER BY score DESC, id ASC
+       ORDER BY
+         score DESC,
+         time ASC NULLS LAST,
+         id ASC
        LIMIT 10`
     );
 
@@ -127,6 +130,7 @@ app.get("/api/ranking", async (req, res) => {
     res.status(500).json({ error: "ランキング取得に失敗しました" });
   }
 });
+
 
 
 // ===============================
@@ -172,3 +176,4 @@ app.post("/api/admin/login", (req, res) => {
 app.listen(PORT, () => {
   console.log("🚀 server running on port " + PORT);
 });
+
