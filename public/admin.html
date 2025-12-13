@@ -64,6 +64,13 @@ async function loadMiss() {
     `).join("");
 }
 loadMiss();
+  <hr>
+
+<h2>📥 CSVエクスポート</h2>
+
+<button id="csvRanking">ランキングCSV</button>
+<button id="csvMiss">ミス分析CSV</button>
+
 
 // 削除
 document.getElementById("deleteBtn").onclick = async () => {
@@ -78,6 +85,23 @@ document.getElementById("deleteBtn").onclick = async () => {
     r.result === "deleted" ? "削除しました" : "失敗";
 };
 </script>
+<script>
+const passInput = document.getElementById("pass");
+
+document.getElementById("csvRanking").onclick = () => {
+  const pass = passInput.value || prompt("管理パスワード");
+  if (!pass) return;
+  location.href = `/api/admin/export/ranking?pass=${encodeURIComponent(pass)}`;
+};
+
+document.getElementById("csvMiss").onclick = () => {
+  const pass = passInput.value || prompt("管理パスワード");
+  if (!pass) return;
+  location.href = `/api/admin/export/miss?pass=${encodeURIComponent(pass)}`;
+};
+</script>
+
 
 </body>
 </html>
+
