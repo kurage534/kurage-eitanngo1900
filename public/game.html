@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>英単語ゲーム</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -22,6 +23,12 @@
 </div>
 
 <div id="game-area" style="display:none;">
+
+  <!-- ★ 追加：タイマー表示 -->
+  <div id="timer" style="font-size:1.5rem; margin-bottom:10px;">
+    00:00
+  </div>
+
   <p id="question"></p>
 
   <input id="answer" placeholder="答え">
@@ -36,6 +43,7 @@
   <button id="to-ranking" style="display:none;">ランキングへ</button>
 </div>
 
+<!-- ★ JSは必ず body の一番下 -->
 <script src="game.js"></script>
 </body>
 </html>
