@@ -1,5 +1,5 @@
 // =====================================================
-// server.js（PostgreSQL 完全対応版）
+// server.js（PostgreSQL 完全対応・1回登録保証版）
 // =====================================================
 
 const express = require("express");
@@ -34,7 +34,10 @@ async function initDB() {
         name TEXT NOT NULL,
         score INTEGER NOT NULL,
         time INTEGER,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+        -- ★ 同一プレイの二重登録防止
+        UNIQUE (name, score, time)
       )
     `);
 
@@ -54,7 +57,6 @@ app.get("/api/words", async (req, res) => {
   try {
     let csv = await fs.readFile(path.join(__dirname, "words.csv"), "utf-8");
 
-    // BOM対策（ExcelでCSV保存した時の問題）
     if (csv.charCodeAt(0) === 0xFEFF) {
       csv = csv.slice(1);
     }
@@ -74,7 +76,7 @@ app.get("/api/words", async (req, res) => {
 
 
 // ===============================
-// 3. ランキング登録（重複防止）
+// 3. ランキング登録（完全1回制限）
 // ===============================
 app.post("/api/submit", async (req, res) => {
   const { name, score, time } = req.body;
@@ -86,17 +88,6 @@ app.post("/api/submit", async (req, res) => {
   const t = isNaN(time) ? null : Number(time);
 
   try {
-    // ★ 重複チェック（名前＋スコア＋タイム）
-    const dup = await pool.query(
-      `SELECT 1 FROM ranking WHERE name=$1 AND score=$2 AND time=$3`,
-      [name, score, t]
-    );
-
-    if (dup.rows.length > 0) {
-      return res.json({ result: "duplicate" });
-    }
-
-    // ★ 新規登録
     await pool.query(
       `INSERT INTO ranking (name, score, time)
        VALUES ($1, $2, $3)`,
@@ -106,6 +97,11 @@ app.post("/api/submit", async (req, res) => {
     res.json({ result: "ok" });
 
   } catch (err) {
+    // ★ UNIQUE 制約違反 = 二重登録
+    if (err.code === "23505") {
+      return res.json({ result: "duplicate" });
+    }
+
     console.error("登録エラー:", err);
     res.status(500).json({ error: "ランキング登録に失敗しました" });
   }
@@ -154,6 +150,7 @@ app.post("/api/admin/delete", async (req, res) => {
   }
 });
 
+
 // ===============================
 // 管理者ログイン
 // ===============================
@@ -169,11 +166,9 @@ app.post("/api/admin/login", (req, res) => {
 });
 
 
-
 // ===============================
 // 6. サーバー起動
 // ===============================
 app.listen(PORT, () => {
   console.log("🚀 server running on port " + PORT);
 });
-
