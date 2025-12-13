@@ -1,10 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <title>英単語ゲーム</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -18,15 +18,7 @@
     <option value="20">20問</option>
     <option value="all">全問</option>
   </select>
-
-  <label>出題形式：</label>
-  <select id="mode">
-    <option value="text">記述式</option>
-    <option value="choice">四択</option>
-  </select>
-
-  <!-- ★ type="button" が超重要 -->
-  <button id="start-btn" type="button">開始</button>
+  <button id="start-btn">開始</button>
 </div>
 
 <div id="game-area" style="display:none;">
@@ -34,33 +26,32 @@
 
   <p id="question"></p>
 
-  <!-- 記述式 -->
   <input id="answer" autocomplete="off">
-  <button id="submit-answer" type="button">送信</button>
-
-  <!-- 四択（最初は非表示） -->
-  <div id="choices" style="display:none;"></div>
+  <button id="submit-answer">送信</button>
 
   <div id="game-message"></div>
 
-  <button id="next-btn" type="button" style="display:none;">次へ</button>
+  <button id="next-btn" style="display:none;">次へ</button>
 
   <div id="score-area"></div>
 
-  <button id="to-ranking" type="button" style="display:none;">ランキングへ</button>
-  <button id="restart-btn" type="button" style="display:none;">もう一度プレイ</button>
+  <button id="to-ranking" style="display:none;">ランキングへ</button>
 </div>
 
-<script src="game.js"></script>
+  <button id="restart-btn" style="display:none;">もう一度プレイ</button>
 
-<hr style="margin:30px 0;">
+
+<script src="game.js"></script>
+  <hr style="margin:30px 0;">
 
 <div style="text-align:center;">
-  <a href="admin-login.html" style="font-size:0.9rem; color:#666;">
-    管理者ログイン
+  <a href="admin-login.html"
+     style="font-size:0.9rem; color:#666; text-decoration:none;">
+    管理者ページ
   </a>
 </div>
 
+  <!-- 管理者専用リンク -->
 <div id="admin-link" style="display:none; text-align:center; margin-top:20px;">
   <a href="admin.html">🔒 管理者ページ</a>
 </div>
@@ -71,5 +62,10 @@
   }
 </script>
 
+
 </body>
 </html>
+
+
+
+
