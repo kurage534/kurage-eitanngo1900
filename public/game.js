@@ -1,5 +1,5 @@
 // ================================
-// game.js 完全統合版（再プレイ対応）
+// game.js 完全統合版（タイマー完全停止）
 // ================================
 
 let allQuestions = [];
@@ -11,7 +11,7 @@ let total = 10;
 let timerId = null;
 let startTime = 0;
 let elapsed = 0;
-let answering = true;
+let answering = false;
 
 // 単語読み込み
 fetch("/api/words")
@@ -25,8 +25,9 @@ function format(sec) {
   return `${m}:${s}`;
 }
 
-// タイマー開始
+// タイマー開始（多重防止）
 function startTimer() {
+  stopTimer(); // ★ 必ず止めてから開始
   startTime = Date.now();
   timerId = setInterval(() => {
     const t = elapsed + Math.floor((Date.now() - startTime) / 1000);
@@ -34,11 +35,16 @@ function startTimer() {
   }, 200);
 }
 
-// タイマー停止
+// タイマー停止（elapsedは加算しない）
 function stopTimer() {
-  if (!timerId) return;
-  clearInterval(timerId);
-  timerId = null;
+  if (timerId !== null) {
+    clearInterval(timerId);
+    timerId = null;
+  }
+}
+
+// 経過時間を確定させる（1問ごと）
+function commitTime() {
   elapsed += Math.floor((Date.now() - startTime) / 1000);
 }
 
@@ -69,6 +75,7 @@ document.getElementById("start-btn").addEventListener("click", () => {
 function showQuestion() {
   if (current >= questions.length) {
     stopTimer();
+    answering = false;
 
     document.getElementById("question").textContent = "終了！";
     document.getElementById("score-area").textContent =
@@ -83,7 +90,6 @@ function showQuestion() {
     document.getElementById("next-btn").style.display = "none";
     document.getElementById("to-ranking").style.display = "";
     document.getElementById("restart-btn").style.display = "";
-
     return;
   }
 
@@ -97,6 +103,8 @@ function showQuestion() {
   document.getElementById("game-message").innerHTML = "";
   document.getElementById("submit-answer").style.display = "";
   document.getElementById("next-btn").style.display = "none";
+
+  startTimer();
 }
 
 // 回答
@@ -104,6 +112,7 @@ document.getElementById("submit-answer").addEventListener("click", async () => {
   if (!answering) return;
 
   answering = false;
+  commitTime();
   stopTimer();
 
   const input = document.getElementById("answer");
@@ -144,7 +153,6 @@ document.addEventListener("click", e => {
 document.getElementById("next-btn").addEventListener("click", () => {
   current++;
   showQuestion();
-  startTimer();
 });
 
 // Enterキー
@@ -170,7 +178,4 @@ document.getElementById("restart-btn").onclick = () => {
   document.getElementById("game-message").textContent = "";
   document.getElementById("question").textContent = "";
   document.getElementById("timer").textContent = "00:00";
-
-  document.getElementById("to-ranking").style.display = "none";
-  document.getElementById("restart-btn").style.display = "none";
 };
