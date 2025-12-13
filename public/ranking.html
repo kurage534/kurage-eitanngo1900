@@ -114,5 +114,18 @@ document.getElementById("send").onclick = async () => {
 };
 </script>
 
+  <!-- 管理者リンク（ログイン済みのみ表示） -->
+<div id="admin-link" style="display:none; text-align:center; margin-top:25px;">
+  <a href="admin.html" style="font-size:1.1rem;">🔒 管理者ページへ</a>
+</div>
+
+<script>
+  if (sessionStorage.getItem("ADMIN_LOGIN") === "YES") {
+    document.getElementById("admin-link").style.display = "block";
+  }
+</script>
+
+
 </body>
 </html>
+
