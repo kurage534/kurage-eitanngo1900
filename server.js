@@ -162,3 +162,52 @@ app.post("/api/admin/delete", async (req, res) => {
 app.listen(PORT, () => {
   console.log("🚀 server running on", PORT);
 });
+
+// ===============================
+// 管理者：ランキングCSVエクスポート
+// ===============================
+app.get("/api/admin/export/ranking", async (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
+  if (req.query.pass !== ADMIN_PASS) {
+    return res.sendStatus(403);
+  }
+
+  const result = await pool.query(
+    "SELECT name, score, time, created_at FROM ranking ORDER BY score DESC, time ASC"
+  );
+
+  let csv = "name,score,time,created_at\n";
+  for (const r of result.rows) {
+    csv += `"${r.name}",${r.score},${r.time ?? ""},${r.created_at}\n`;
+  }
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", "attachment; filename=ranking.csv");
+  res.send(csv);
+});
+
+// ===============================
+// 管理者：ミス分析CSVエクスポート
+// ===============================
+app.get("/api/admin/export/miss", async (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
+  if (req.query.pass !== ADMIN_PASS) {
+    return res.sendStatus(403);
+  }
+
+  const result = await pool.query(
+    "SELECT word, miss_count FROM miss_log ORDER BY miss_count DESC"
+  );
+
+  let csv = "word,miss_count\n";
+  for (const r of result.rows) {
+    csv += `"${r.word}",${r.miss_count}\n`;
+  }
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", "attachment; filename=miss_analysis.csv");
+  res.send(csv);
+});
+
+
+
