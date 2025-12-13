@@ -41,6 +41,16 @@ async function initDB() {
       wrong_count INTEGER DEFAULT 1
     )
   `);
+
+  await pool.query(`
+  　CREATE TABLE IF NOT EXISTS miss_log (
+    　id SERIAL PRIMARY KEY,
+    　word TEXT NOT NULL,
+    　miss_count INTEGER DEFAULT 1,
+    　updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  　)
+`　);
+
 }
 initDB();
 
@@ -150,3 +160,4 @@ app.post("/api/admin/delete", async (req, res) => {
 });
 
 app.listen(PORT, () => console.log("server running"));
+
