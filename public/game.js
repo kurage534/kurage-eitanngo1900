@@ -1,5 +1,5 @@
 // =====================================
-// game.js（完全版：入力制御・mm:ssタイマー・思考時間計測）
+// game.js（完全版：開始バグ修正済）
 // =====================================
 
 let allQuestions = [];
@@ -13,11 +13,11 @@ let answeringNow = true;
 // ⏱ タイマー
 let timerId = null;
 let startTime = 0;
-let elapsedTime = 0; // 累積秒
+let elapsedTime = 0;
 
-// 🧠 問題ごとの思考時間
+// 🧠 思考時間
 let questionStartTime = 0;
-let thinkingTimes = []; // 各問題の秒数
+let thinkingTimes = [];
 
 
 // -------------------------
@@ -43,7 +43,7 @@ function shuffle(arr) {
 
 
 // -------------------------
-// 時間表示（mm:ss）
+// mm:ss 表示
 // -------------------------
 function formatTime(sec) {
   const m = String(Math.floor(sec / 60)).padStart(2, "0");
@@ -60,8 +60,7 @@ function startTimer() {
   questionStartTime = Date.now();
 
   timerId = setInterval(() => {
-    const now = Date.now();
-    const sec = elapsedTime + Math.floor((now - startTime) / 1000);
+    const sec = elapsedTime + Math.floor((Date.now() - startTime) / 1000);
     document.getElementById("timer").textContent = formatTime(sec);
   }, 200);
 }
@@ -77,11 +76,8 @@ function stopTimer() {
   timerId = null;
 
   const now = Date.now();
-
-  // 総時間
   elapsedTime += Math.floor((now - startTime) / 1000);
 
-  // この問題の思考時間
   const thinkSec = Math.floor((now - questionStartTime) / 1000);
   thinkingTimes.push(thinkSec);
 }
@@ -91,9 +87,14 @@ function stopTimer() {
 // ゲーム開始
 // -------------------------
 document.getElementById("start-btn").addEventListener("click", () => {
-  const sel = document.getElementById("qcount").value;
+  if (allQuestions.length === 0) {
+    alert("問題を読み込み中です。少し待ってください。");
+    return;
+  }
 
+  const sel = document.getElementById("qcount").value;
   total = sel === "all" ? allQuestions.length : Number(sel);
+
   questions = shuffle([...allQuestions]).slice(0, total);
 
   current = 0;
@@ -105,7 +106,6 @@ document.getElementById("start-btn").addEventListener("click", () => {
   document.getElementById("setup-area").style.display = "none";
   document.getElementById("game-area").style.display = "";
 
-  startTimer();
   showQuestion();
 });
 
@@ -117,37 +117,33 @@ function showQuestion() {
   if (current < questions.length) {
     answeringNow = true;
 
-    // 入力有効化
     document.getElementById("answer").disabled = false;
-
-    startTimer();
+    document.getElementById("answer").value = "";
 
     document.getElementById("question").textContent =
       `(${current + 1}/${questions.length}) ${questions[current].japanese}`;
 
-    document.getElementById("answer").value = "";
     document.getElementById("submit-answer").style.display = "";
     document.getElementById("next-btn").style.display = "none";
     document.getElementById("game-message").innerHTML = "";
 
+    startTimer(); // ← ここだけで開始
+
   } else {
     stopTimer();
 
-    const clearTime = elapsedTime;
-
     document.getElementById("question").textContent = "終了！";
     document.getElementById("score-area").textContent =
-      `スコア：${score}点 ／ 時間：${formatTime(clearTime)}`;
+      `スコア：${score}点 ／ 時間：${formatTime(elapsedTime)}`;
 
     document.getElementById("submit-answer").style.display = "none";
     document.getElementById("answer").style.display = "none";
     document.getElementById("next-btn").style.display = "none";
     document.getElementById("to-ranking").style.display = "";
 
-    // ランキング用保存
     localStorage.setItem("CAN_REGISTER", "YES");
     localStorage.setItem("score", score);
-    localStorage.setItem("time", clearTime);
+    localStorage.setItem("time", elapsedTime);
   }
 }
 
@@ -158,10 +154,9 @@ function showQuestion() {
 document.getElementById("submit-answer").addEventListener("click", () => {
   if (!answeringNow) return;
 
-  stopTimer(); // ⏸ 正誤表示中は停止
+  stopTimer();
   answeringNow = false;
 
-  // 入力を無効化（①）
   document.getElementById("answer").disabled = true;
 
   const ans = document.getElementById("answer").value.trim().toLowerCase();
@@ -186,15 +181,15 @@ document.getElementById("submit-answer").addEventListener("click", () => {
 // -------------------------
 document.addEventListener("click", (e) => {
   if (e.target.id === "soundBtn") {
-    const utter = new SpeechSynthesisUtterance(questions[current].word);
-    utter.lang = "en-US";
-    speechSynthesis.speak(utter);
+    const u = new SpeechSynthesisUtterance(questions[current].word);
+    u.lang = "en-US";
+    speechSynthesis.speak(u);
   }
 });
 
 
 // -------------------------
-// 次の問題へ
+// 次の問題
 // -------------------------
 document.getElementById("next-btn").addEventListener("click", () => {
   current++;
@@ -203,21 +198,19 @@ document.getElementById("next-btn").addEventListener("click", () => {
 
 
 // -------------------------
-// Enterキー最適化
+// Enterキー対応
 // -------------------------
 window.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
-    if (answeringNow) {
-      document.getElementById("submit-answer").click();
-    } else {
-      document.getElementById("next-btn").click();
-    }
+    answeringNow
+      ? document.getElementById("submit-answer").click()
+      : document.getElementById("next-btn").click();
   }
 });
 
 
 // -------------------------
-// ランキング画面へ
+// ランキングへ
 // -------------------------
 document.getElementById("to-ranking").addEventListener("click", () => {
   window.location.href = "ranking.html";
