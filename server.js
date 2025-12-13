@@ -24,34 +24,33 @@ app.use(express.static(path.join(__dirname, "public")));
 // DB初期化
 // ===============================
 async function initDB() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS ranking (
-      id SERIAL PRIMARY KEY,
-      name TEXT UNIQUE,
-      score INTEGER NOT NULL,
-      time INTEGER NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+  try {
+    await pool.query(`
+CREATE TABLE IF NOT EXISTS ranking (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  score INTEGER NOT NULL,
+  time INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+`);
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS mistakes (
-      id SERIAL PRIMARY KEY,
-      word TEXT UNIQUE,
-      wrong_count INTEGER DEFAULT 1
-    )
-  `);
+    await pool.query(`
+CREATE TABLE IF NOT EXISTS miss_log (
+  id SERIAL PRIMARY KEY,
+  word TEXT NOT NULL UNIQUE,
+  miss_count INTEGER DEFAULT 1,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+`);
 
-  await pool.query(`
-  　CREATE TABLE IF NOT EXISTS miss_log (
-    　id SERIAL PRIMARY KEY,
-    　word TEXT NOT NULL,
-    　miss_count INTEGER DEFAULT 1,
-    　updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  　)
-`　);
+    console.log("✅ DB tables ready");
 
+  } catch (err) {
+    console.error("❌ DB init error:", err);
+  }
 }
+
 initDB();
 
 // ===============================
@@ -219,6 +218,7 @@ app.get("/api/admin/miss", async (req, res) => {
 
   res.json(result.rows);
 });
+
 
 
 
