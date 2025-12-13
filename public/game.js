@@ -1,5 +1,5 @@
 // ================================
-// game.js 完全統合版（機能削除なし）
+// game.js 完全統合版（再プレイ対応）
 // ================================
 
 let allQuestions = [];
@@ -42,7 +42,7 @@ function stopTimer() {
   elapsed += Math.floor((Date.now() - startTime) / 1000);
 }
 
-// 開始
+// ゲーム開始
 document.getElementById("start-btn").addEventListener("click", () => {
   const sel = document.getElementById("qcount").value;
   total = sel === "all" ? allQuestions.length : Number(sel);
@@ -52,9 +52,14 @@ document.getElementById("start-btn").addEventListener("click", () => {
   current = 0;
   score = 0;
   elapsed = 0;
+  answering = true;
 
+  document.getElementById("timer").textContent = "00:00";
   document.getElementById("setup-area").style.display = "none";
   document.getElementById("game-area").style.display = "";
+  document.getElementById("to-ranking").style.display = "none";
+  document.getElementById("restart-btn").style.display = "none";
+  document.getElementById("answer").style.display = "";
 
   showQuestion();
   startTimer();
@@ -64,6 +69,7 @@ document.getElementById("start-btn").addEventListener("click", () => {
 function showQuestion() {
   if (current >= questions.length) {
     stopTimer();
+
     document.getElementById("question").textContent = "終了！";
     document.getElementById("score-area").textContent =
       `スコア：${score}点 / 時間：${format(elapsed)}`;
@@ -74,13 +80,17 @@ function showQuestion() {
 
     document.getElementById("submit-answer").style.display = "none";
     document.getElementById("answer").style.display = "none";
+    document.getElementById("next-btn").style.display = "none";
     document.getElementById("to-ranking").style.display = "";
+    document.getElementById("restart-btn").style.display = "";
+
     return;
   }
 
   answering = true;
   document.getElementById("answer").disabled = false;
   document.getElementById("answer").value = "";
+
   document.getElementById("question").textContent =
     `(${current + 1}/${questions.length}) ${questions[current].japanese}`;
 
@@ -92,6 +102,7 @@ function showQuestion() {
 // 回答
 document.getElementById("submit-answer").addEventListener("click", async () => {
   if (!answering) return;
+
   answering = false;
   stopTimer();
 
@@ -106,8 +117,8 @@ document.getElementById("submit-answer").addEventListener("click", async () => {
     document.getElementById("game-message").textContent = "正解！ +10点";
   } else {
     document.getElementById("game-message").innerHTML =
-      `不正解… 正解：<b>${correct}</b>
-       <br><button id="soundBtn">音声を聞く</button>`;
+      `不正解… 正解：<b>${correct}</b><br>
+       <button id="soundBtn">音声を聞く</button>`;
 
     await fetch("/api/miss", {
       method: "POST",
@@ -147,4 +158,19 @@ window.addEventListener("keydown", e => {
 // ランキングへ
 document.getElementById("to-ranking").onclick = () => {
   window.location.href = "ranking.html";
+};
+
+// 🔁 もう一度プレイ
+document.getElementById("restart-btn").onclick = () => {
+  stopTimer();
+
+  document.getElementById("game-area").style.display = "none";
+  document.getElementById("setup-area").style.display = "";
+  document.getElementById("score-area").textContent = "";
+  document.getElementById("game-message").textContent = "";
+  document.getElementById("question").textContent = "";
+  document.getElementById("timer").textContent = "00:00";
+
+  document.getElementById("to-ranking").style.display = "none";
+  document.getElementById("restart-btn").style.display = "none";
 };
