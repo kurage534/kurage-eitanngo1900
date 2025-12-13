@@ -125,6 +125,9 @@ document.getElementById("send").addEventListener("click", async () => {
     if (result.result === "ok") {
       msg.textContent = "登録しました！";
       msg.style.color = "green";
+      document.getElementById("name").style.display = "none";
+      document.getElementById("send").style.display = "none";
+
 
       // 再読み込み
       loadRanking();
@@ -143,3 +146,4 @@ document.getElementById("send").addEventListener("click", async () => {
 
 </body>
 </html>
+
