@@ -219,6 +219,15 @@ app.get("/api/admin/miss", async (req, res) => {
   res.json(result.rows);
 });
 
+app.post("/api/admin/login", (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "admin";
+  const { pass } = req.body;
+
+  if (pass === ADMIN_PASS) {
+    return res.json({ result: "ok"
+
+
+
 
 
 
