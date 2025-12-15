@@ -155,10 +155,12 @@ a {
 .choice-btn:active {
   transform: scale(0.97);
 }
-/* 問題画面では出題形式を非表示 */
-#game-area #mode,
-#game-area label[for="mode"] {
+/* ゲーム中は出題形式を非表示 */
+body.playing #mode,
+body.playing label[for="mode"] {
   display: none;
 }
+
+
 
 
