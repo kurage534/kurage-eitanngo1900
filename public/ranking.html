@@ -11,7 +11,7 @@
 <h1>ランキング</h1>
 
 <!-- モード切り替え -->
-<div id="mode-select" style="margin-bottom:15px;">
+<div id="mode-select" style="margin-bottom:15px; text-align:center;">
   <button id="write-btn">記述式</button>
   <button id="choice-btn">四択式</button>
 </div>
@@ -26,7 +26,7 @@
 
 <script>
 /* =========================
-   ランキング制御
+   ランキング制御（完全版）
 ========================= */
 
 const list = document.getElementById("ranking-list");
@@ -37,43 +37,48 @@ const choiceBtn = document.getElementById("choice-btn");
 let currentMode = localStorage.getItem("mode") || "write";
 
 // 初期表示
-loadRanking(currentMode);
 updateButtons();
+loadRanking(currentMode);
 
 /* ランキング取得 */
-function loadRanking(mode) {
+async function loadRanking(mode) {
   list.innerHTML = "<li>読み込み中...</li>";
 
-  fetch(`/api/ranking?mode=${mode}`)
-    .then(res => {
-      if (!res.ok) throw new Error("HTTP error");
-      return res.json();
-    })
-    .then(data => {
-      list.innerHTML = "";
+  try {
+    const res = await fetch(`/api/ranking?mode=${mode}`);
+    if (!res.ok) throw new Error("fetch error");
 
-      if (!data || data.length === 0) {
-        list.innerHTML = "<li>まだランキングがありません</li>";
-        return;
-      }
+    const data = await res.json();
+    list.innerHTML = "";
 
-      data.forEach((r, i) => {
-        const li = document.createElement("li");
-        li.style.background = "#f1f1f1";
-        li.style.margin = "8px 0";
-        li.style.padding = "12px";
-        li.style.borderRadius = "10px";
+    if (!data || data.length === 0) {
+      list.innerHTML = "<li>まだランキングがありません</li>";
+      return;
+    }
 
-        li.textContent =
-          `${i + 1}位　${r.name}　${r.score}点　${r.time}秒`;
+    data.forEach((r, i) => {
+      const li = document.createElement("li");
 
-        list.appendChild(li);
-      });
-    })
-    .catch(err => {
-      console.error(err);
-      list.innerHTML = "<li>ランキングの取得に失敗しました</li>";
+      li.style.background = "#f1f1f1";
+      li.style.margin = "8px 0";
+      li.style.padding = "12px";
+      li.style.borderRadius = "10px";
+
+      const timeText =
+        r.time !== null && r.time !== undefined
+          ? `${r.time}秒`
+          : "-";
+
+      li.textContent =
+        `${i + 1}位　${r.name}　${r.score}点　${timeText}`;
+
+      list.appendChild(li);
     });
+
+  } catch (err) {
+    console.error(err);
+    list.innerHTML = "<li>ランキングの取得に失敗しました</li>";
+  }
 }
 
 /* ボタン状態 */
