@@ -12,8 +12,13 @@
 <!-- 登録エリア -->
 <div id="register-area">
   <input id="name" placeholder="名前（必須）" autocomplete="off">
+
+  <!-- ★ ここに追加 -->
+  <input type="hidden" id="mode">
+
   <button id="send">ランキングに登録する</button>
 </div>
+
 
 <div id="msg"></div>
 
@@ -27,6 +32,12 @@
 
 <br>
 <a href="index.html">← ホームへ戻る</a>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const mode = localStorage.getItem("mode");
+  document.getElementById("mode").value = mode;
+});
+</script>
 
 <script>
 function esc(s) {
@@ -95,7 +106,10 @@ document.getElementById("send").onclick = async () => {
   const res = await fetch("/api/submit", {
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ name, score, time })
+    const mode = document.getElementById("mode").value;
+
+    body: JSON.stringify({ name, score, time, mode })
+
   });
 
   const r = await res.json();
@@ -128,4 +142,5 @@ document.getElementById("send").onclick = async () => {
 
 </body>
 </html>
+
 
