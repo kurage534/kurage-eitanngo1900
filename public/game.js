@@ -63,7 +63,6 @@ document.getElementById("start-btn").addEventListener("click", () => {
   document.getElementById("timer").textContent = "00:00";
 
   showQuestion();
-  startTimer();
 });
 
 /* 問題表示 */
@@ -88,14 +87,18 @@ function showQuestion() {
     return;
   }
 
+  /* ★ 入力欄を必ず復活させる */
   answering = true;
-  document.getElementById("answer").disabled = false;
-  document.getElementById("answer").value = "";
+  const answerInput = document.getElementById("answer");
+  answerInput.style.display = "block";
+  answerInput.disabled = false;
+  answerInput.value = "";
+  answerInput.focus();
 
   document.getElementById("question").textContent =
     `(${current + 1}/${questions.length}) ${questions[current].japanese}`;
 
-  document.getElementById("game-message").textContent = "";
+  document.getElementById("game-message").innerHTML = "";
   document.getElementById("submit-answer").style.display = "block";
   document.getElementById("next-btn").style.display = "none";
 
@@ -120,17 +123,29 @@ document.getElementById("submit-answer").addEventListener("click", async () => {
     score += 10;
     document.getElementById("game-message").textContent = "正解！ +10点";
   } else {
+    /* ★ 音声ボタン復活 */
     document.getElementById("game-message").innerHTML =
-      `不正解… 正解：<b>${correct}</b>`;
+      `不正解… 正解：<b>${correct}</b><br>
+       <button id="soundBtn">🔊 音声を聞く</button>`;
+
     await fetch("/api/miss", {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ word: correct })
     });
   }
 
   document.getElementById("submit-answer").style.display = "none";
   document.getElementById("next-btn").style.display = "block";
+});
+
+/* 音声再生 */
+document.addEventListener("click", e => {
+  if (e.target.id === "soundBtn") {
+    const u = new SpeechSynthesisUtterance(questions[current].word);
+    u.lang = "en-US";
+    speechSynthesis.speak(u);
+  }
 });
 
 /* 次へ */
