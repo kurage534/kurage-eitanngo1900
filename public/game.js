@@ -90,6 +90,7 @@ function showQuestion() {
 
     localStorage.setItem("score", score);
     localStorage.setItem("time", elapsed);
+    localStorage.setItem("mode", mode); // ★ 追加
     localStorage.setItem("CAN_REGISTER", "YES");
 
     document.getElementById("answer").style.display = "none";
@@ -238,5 +239,6 @@ document.getElementById("restart-btn").onclick = () => {
   document.getElementById("game-area").style.display = "none";
   document.getElementById("setup-area").style.display = "block";
 };
+
 
 
