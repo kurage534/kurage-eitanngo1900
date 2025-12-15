@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <title>英単語ゲーム</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -26,7 +26,7 @@
 
   <p id="question"></p>
 
-  <input id="answer" autocomplete="off">
+  <input id="answer" autocomplete="off" placeholder="英単語を入力">
   <button id="submit-answer">送信</button>
 
   <div id="game-message"></div>
@@ -36,13 +36,10 @@
   <div id="score-area"></div>
 
   <button id="to-ranking" style="display:none;">ランキングへ</button>
+  <button id="restart-btn" style="display:none;">もう一度プレイ</button>
 </div>
 
-  <button id="restart-btn" style="display:none;">もう一度プレイ</button>
-
-
-<script src="game.js"></script>
-  <hr style="margin:30px 0;">
+<hr style="margin:30px 0;">
 
 <div style="text-align:center;">
   <a href="admin-login.html"
@@ -51,21 +48,6 @@
   </a>
 </div>
 
-  <!-- 管理者専用リンク -->
-<div id="admin-link" style="display:none; text-align:center; margin-top:20px;">
-  <a href="admin.html">🔒 管理者ページ</a>
-</div>
-
-<script>
-  if (sessionStorage.getItem("ADMIN_LOGIN") === "YES") {
-    document.getElementById("admin-link").style.display = "block";
-  }
-</script>
-
-
+<script src="game.js"></script>
 </body>
 </html>
-
-
-
-
