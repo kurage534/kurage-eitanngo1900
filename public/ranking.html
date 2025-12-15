@@ -4,143 +4,99 @@
   <meta charset="UTF-8">
   <title>ランキング</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <h1>ランキング</h1>
 
-<!-- 登録エリア -->
-<div id="register-area">
-  <input id="name" placeholder="名前（必須）" autocomplete="off">
-
-  <!-- ★ ここに追加 -->
-  <input type="hidden" id="mode">
-
-  <button id="send">ランキングに登録する</button>
+<!-- モード切り替え -->
+<div id="mode-select" style="margin-bottom:15px;">
+  <button id="write-btn">記述式</button>
+  <button id="choice-btn">四択式</button>
 </div>
 
+<!-- ランキング表示 -->
+<ul id="ranking-list" style="list-style:none; padding:0;">
+  <li>読み込み中...</li>
+</ul>
 
-<div id="msg"></div>
-
-<!-- ★ 自分の順位 -->
-<div id="my-rank" style="margin:20px 0;font-size:1.2rem;"></div>
-
-<hr>
-
-<h2>上位10位</h2>
-<div id="list">読み込み中...</div>
-
-<br>
-<a href="index.html">← ホームへ戻る</a>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const mode = localStorage.getItem("mode");
-  document.getElementById("mode").value = mode;
-});
-</script>
+<!-- 戻る -->
+<a href="game.html">← ゲームに戻る</a>
 
 <script>
-function esc(s) {
-  return s.replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
+/* =========================
+   ランキング制御
+========================= */
+
+const list = document.getElementById("ranking-list");
+const writeBtn = document.getElementById("write-btn");
+const choiceBtn = document.getElementById("choice-btn");
+
+// 保存されているモード or デフォルト
+let currentMode = localStorage.getItem("mode") || "write";
+
+// 初期表示
+loadRanking(currentMode);
+updateButtons();
+
+/* ランキング取得 */
+function loadRanking(mode) {
+  list.innerHTML = "<li>読み込み中...</li>";
+
+  fetch(`/api/ranking?mode=${mode}`)
+    .then(res => {
+      if (!res.ok) throw new Error("HTTP error");
+      return res.json();
+    })
+    .then(data => {
+      list.innerHTML = "";
+
+      if (!data || data.length === 0) {
+        list.innerHTML = "<li>まだランキングがありません</li>";
+        return;
+      }
+
+      data.forEach((r, i) => {
+        const li = document.createElement("li");
+        li.style.background = "#f1f1f1";
+        li.style.margin = "8px 0";
+        li.style.padding = "12px";
+        li.style.borderRadius = "10px";
+
+        li.textContent =
+          `${i + 1}位　${r.name}　${r.score}点　${r.time}秒`;
+
+        list.appendChild(li);
+      });
+    })
+    .catch(err => {
+      console.error(err);
+      list.innerHTML = "<li>ランキングの取得に失敗しました</li>";
+    });
 }
 
-const CAN = localStorage.getItem("CAN_REGISTER");
-const registerArea = document.getElementById("register-area");
-const msg = document.getElementById("msg");
-
-if (CAN !== "YES") {
-  registerArea.style.display = "none";
-  msg.textContent = "※ クイズを1回クリアした時だけ登録できます";
+/* ボタン状態 */
+function updateButtons() {
+  writeBtn.disabled = currentMode === "write";
+  choiceBtn.disabled = currentMode === "choice";
 }
 
-// ランキング読み込み
-async function loadRanking() {
-  const res = await fetch("/api/ranking");
-  const data = await res.json();
+/* モード切替 */
+writeBtn.onclick = () => {
+  currentMode = "write";
+  localStorage.setItem("mode", "write");
+  updateButtons();
+  loadRanking("write");
+};
 
-  if (!Array.isArray(data)) {
-    document.getElementById("list").textContent = "読み込み失敗";
-    return;
-  }
-
-  // 上位10
-  document.getElementById("list").innerHTML =
-    data.slice(0,10).map((x,i)=>`
-      <div>
-        <b>${i+1}位</b><br>
-        ${esc(x.name)} / ${x.score}点 / ${x.time ?? "-"}秒
-      </div>
-    `).join("");
-
-  // ★ 自分の順位計算
-  const myName = localStorage.getItem("LAST_NAME");
-  const myScore = Number(localStorage.getItem("score"));
-  const myTime = Number(localStorage.getItem("time"));
-
-  const idx = data.findIndex(x =>
-    x.name === myName &&
-    x.score === myScore &&
-    Number(x.time) === myTime
-  );
-
-  if (idx >= 0) {
-    document.getElementById("my-rank").textContent =
-      `🎉 あなたの順位：${idx + 1}位`;
-  }
-}
-loadRanking();
-
-// 登録
-document.getElementById("send").onclick = async () => {
-  const name = document.getElementById("name").value.trim();
-  const score = Number(localStorage.getItem("score"));
-  const time = Number(localStorage.getItem("time"));
-
-  if (!name) {
-    msg.textContent = "名前を入力してください";
-    return;
-  }
-
-  const res = await fetch("/api/submit", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    const mode = document.getElementById("mode").value;
-
-    body: JSON.stringify({ name, score, time, mode })
-
-  });
-
-  const r = await res.json();
-
-  if (r.result === "ok") {
-    msg.textContent = "登録しました！";
-    localStorage.setItem("CAN_REGISTER","NO");
-    localStorage.setItem("LAST_NAME", name);
-    registerArea.style.display = "none";
-    loadRanking();
-  } else if (r.result === "duplicate") {
-    msg.textContent = "同じ記録は登録済みです";
-  } else {
-    msg.textContent = "登録失敗";
-  }
+choiceBtn.onclick = () => {
+  currentMode = "choice";
+  localStorage.setItem("mode", "choice");
+  updateButtons();
+  loadRanking("choice");
 };
 </script>
 
-  <!-- 管理者リンク（ログイン済みのみ表示） -->
-<div id="admin-link" style="display:none; text-align:center; margin-top:25px;">
-  <a href="admin.html" style="font-size:1.1rem;">🔒 管理者ページへ</a>
-</div>
-
-<script>
-  if (sessionStorage.getItem("ADMIN_LOGIN") === "YES") {
-    document.getElementById("admin-link").style.display = "block";
-  }
-</script>
-
-
 </body>
 </html>
-
-
