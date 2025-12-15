@@ -20,6 +20,12 @@
   </select>
   <button id="start-btn">開始</button>
 </div>
+  <label>出題形式：</label>
+<select id="mode">
+  <option value="write" selected>記述式</option>
+  <option value="choice">四択式</option>
+</select>
+
 
 <div id="game-area" style="display:none;">
   <div id="timer">00:00</div>
@@ -27,6 +33,13 @@
   <p id="question"></p>
 
   <input id="answer" autocomplete="off" placeholder="英単語を入力">
+<div id="choices" style="display:none;">
+  <button class="choice-btn"></button>
+  <button class="choice-btn"></button>
+  <button class="choice-btn"></button>
+  <button class="choice-btn"></button>
+</div>
+
   <button id="submit-answer">送信</button>
 
   <div id="game-message"></div>
@@ -51,3 +64,4 @@
 <script src="game.js"></script>
 </body>
 </html>
+
