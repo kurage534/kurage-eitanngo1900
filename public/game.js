@@ -47,6 +47,8 @@ function commitTime() {
    ゲーム開始
 ====================== */
 document.getElementById("start-btn").addEventListener("click", () => {
+  document.body.classList.add("playing");
+
   if (allQuestions.length === 0) {
     alert("単語を読み込み中です。少し待ってください");
     return;
@@ -224,6 +226,8 @@ document.getElementById("to-ranking").onclick = () => {
 /* 再プレイ */
 document.getElementById("restart-btn").onclick = () => {
   stopTimer();
+  document.body.classList.remove("playing");
   document.getElementById("game-area").style.display = "none";
   document.getElementById("setup-area").style.display = "block";
 };
+
