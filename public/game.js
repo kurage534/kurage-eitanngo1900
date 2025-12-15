@@ -1,4 +1,5 @@
 let allQuestions = [];
+let mode = "write"; // write / choice
 let questions = [];
 let current = 0;
 let score = 0;
@@ -44,7 +45,9 @@ function commitTime() {
 
 /* ゲーム開始 */
 document.getElementById("start-btn").addEventListener("click", () => {
-  const sel = document.getElementById("qcount").value;
+  mode = document.getElementById("mode").value;
+  // ↓ 以下は既存のまま
+
   total = sel === "all" ? allQuestions.length : Number(sel);
 
   questions = [...allQuestions].sort(() => Math.random() - 0.5).slice(0, total);
@@ -81,29 +84,78 @@ function showQuestion() {
 
     document.getElementById("answer").style.display = "none";
     document.getElementById("submit-answer").style.display = "none";
+    document.getElementById("choices").style.display = "none";
     document.getElementById("next-btn").style.display = "none";
     document.getElementById("to-ranking").style.display = "block";
     document.getElementById("restart-btn").style.display = "block";
     return;
   }
 
-  /* ★ 入力欄を必ず復活させる */
   answering = true;
-  const answerInput = document.getElementById("answer");
-  answerInput.style.display = "block";
-  answerInput.disabled = false;
-  answerInput.value = "";
-  answerInput.focus();
+  document.getElementById("game-message").innerHTML = "";
+  document.getElementById("next-btn").style.display = "none";
 
   document.getElementById("question").textContent =
     `(${current + 1}/${questions.length}) ${questions[current].japanese}`;
 
-  document.getElementById("game-message").innerHTML = "";
-  document.getElementById("submit-answer").style.display = "block";
-  document.getElementById("next-btn").style.display = "none";
+  if (mode === "write") {
+    // === 記述式 ===
+    document.getElementById("answer").style.display = "block";
+    document.getElementById("submit-answer").style.display = "block";
+    document.getElementById("choices").style.display = "none";
+    document.getElementById("answer").value = "";
+    document.getElementById("answer").disabled = false;
+  } else {
+    // === 四択式 ===
+    document.getElementById("answer").style.display = "none";
+    document.getElementById("submit-answer").style.display = "none";
+    document.getElementById("choices").style.display = "block";
+    setupChoices();
+  }
 
   startTimer();
 }
+function setupChoices() {
+  const correct = questions[current].word;
+  let options = [correct];
+
+  while (options.length < 4) {
+    const w = allQuestions[Math.floor(Math.random() * allQuestions.length)].word;
+    if (!options.includes(w)) options.push(w);
+  }
+
+  options.sort(() => Math.random() - 0.5);
+
+  document.querySelectorAll(".choice-btn").forEach((btn, i) => {
+    btn.textContent = options[i];
+    btn.onclick = () => checkChoice(options[i], correct);
+  });
+}
+function checkChoice(selected, correct) {
+  if (!answering) return;
+
+  answering = false;
+  commitTime();
+  stopTimer();
+
+  if (selected === correct) {
+    score += 10;
+    document.getElementById("game-message").textContent = "正解！ +10点";
+  } else {
+    document.getElementById("game-message").innerHTML =
+      `不正解… 正解：<b>${correct}</b><br>
+       <button id="soundBtn">🔊 音声を聞く</button>`;
+
+    fetch("/api/miss", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ word: correct })
+    });
+  }
+
+  document.getElementById("next-btn").style.display = "block";
+}
+
 
 /* 回答 */
 document.getElementById("submit-answer").addEventListener("click", async () => {
@@ -173,3 +225,4 @@ document.getElementById("restart-btn").onclick = () => {
   document.getElementById("game-area").style.display = "none";
   document.getElementById("setup-area").style.display = "block";
 };
+
