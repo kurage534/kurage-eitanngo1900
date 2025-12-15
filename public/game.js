@@ -43,13 +43,19 @@ function commitTime() {
   elapsed += Math.floor((Date.now() - startTime) / 1000);
 }
 
-/* ゲーム開始 */
+/* ======================
+   ゲーム開始
+====================== */
 document.getElementById("start-btn").addEventListener("click", () => {
+  if (allQuestions.length === 0) {
+    alert("単語を読み込み中です。少し待ってください");
+    return;
+  }
+
   mode = document.getElementById("mode").value;
-  // ↓ 以下は既存のまま
+  const sel = document.getElementById("qcount").value;
 
   total = sel === "all" ? allQuestions.length : Number(sel);
-
   questions = [...allQuestions].sort(() => Math.random() - 0.5).slice(0, total);
 
   current = 0;
@@ -68,7 +74,9 @@ document.getElementById("start-btn").addEventListener("click", () => {
   showQuestion();
 });
 
-/* 問題表示 */
+/* ======================
+   問題表示
+====================== */
 function showQuestion() {
   if (current >= questions.length) {
     stopTimer();
@@ -99,14 +107,12 @@ function showQuestion() {
     `(${current + 1}/${questions.length}) ${questions[current].japanese}`;
 
   if (mode === "write") {
-    // === 記述式 ===
     document.getElementById("answer").style.display = "block";
     document.getElementById("submit-answer").style.display = "block";
     document.getElementById("choices").style.display = "none";
     document.getElementById("answer").value = "";
     document.getElementById("answer").disabled = false;
   } else {
-    // === 四択式 ===
     document.getElementById("answer").style.display = "none";
     document.getElementById("submit-answer").style.display = "none";
     document.getElementById("choices").style.display = "block";
@@ -115,6 +121,10 @@ function showQuestion() {
 
   startTimer();
 }
+
+/* ======================
+   四択
+====================== */
 function setupChoices() {
   const correct = questions[current].word;
   let options = [correct];
@@ -131,6 +141,7 @@ function setupChoices() {
     btn.onclick = () => checkChoice(options[i], correct);
   });
 }
+
 function checkChoice(selected, correct) {
   if (!answering) return;
 
@@ -145,19 +156,14 @@ function checkChoice(selected, correct) {
     document.getElementById("game-message").innerHTML =
       `不正解… 正解：<b>${correct}</b><br>
        <button id="soundBtn">🔊 音声を聞く</button>`;
-
-    fetch("/api/miss", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ word: correct })
-    });
   }
 
   document.getElementById("next-btn").style.display = "block";
 }
 
-
-/* 回答 */
+/* ======================
+   記述式回答
+====================== */
 document.getElementById("submit-answer").addEventListener("click", async () => {
   if (!answering) return;
 
@@ -175,23 +181,16 @@ document.getElementById("submit-answer").addEventListener("click", async () => {
     score += 10;
     document.getElementById("game-message").textContent = "正解！ +10点";
   } else {
-    /* ★ 音声ボタン復活 */
     document.getElementById("game-message").innerHTML =
       `不正解… 正解：<b>${correct}</b><br>
        <button id="soundBtn">🔊 音声を聞く</button>`;
-
-    await fetch("/api/miss", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ word: correct })
-    });
   }
 
   document.getElementById("submit-answer").style.display = "none";
   document.getElementById("next-btn").style.display = "block";
 });
 
-/* 音声再生 */
+/* 音声 */
 document.addEventListener("click", e => {
   if (e.target.id === "soundBtn") {
     const u = new SpeechSynthesisUtterance(questions[current].word);
@@ -206,11 +205,14 @@ document.getElementById("next-btn").addEventListener("click", () => {
   showQuestion();
 });
 
-/* Enterキー */
+/* Enter */
 window.addEventListener("keydown", e => {
   if (e.key === "Enter") {
-    if (answering) document.getElementById("submit-answer").click();
-    else document.getElementById("next-btn").click();
+    if (answering && mode === "write") {
+      document.getElementById("submit-answer").click();
+    } else {
+      document.getElementById("next-btn").click();
+    }
   }
 });
 
@@ -225,4 +227,3 @@ document.getElementById("restart-btn").onclick = () => {
   document.getElementById("game-area").style.display = "none";
   document.getElementById("setup-area").style.display = "block";
 };
-
