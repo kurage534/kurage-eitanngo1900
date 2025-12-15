@@ -209,14 +209,22 @@ document.getElementById("next-btn").addEventListener("click", () => {
 
 /* Enter */
 window.addEventListener("keydown", e => {
-  if (e.key === "Enter") {
-    if (answering && mode === "write") {
+  if (e.key !== "Enter") return;
+
+  // 回答中
+  if (answering) {
+    // 記述式だけ Enter を有効にする
+    if (mode === "write") {
       document.getElementById("submit-answer").click();
-    } else {
-      document.getElementById("next-btn").click();
     }
+    // 四択式では何もしない
+    return;
   }
+
+  // 回答後は「次へ」
+  document.getElementById("next-btn").click();
 });
+
 
 /* ランキング */
 document.getElementById("to-ranking").onclick = () => {
@@ -230,4 +238,5 @@ document.getElementById("restart-btn").onclick = () => {
   document.getElementById("game-area").style.display = "none";
   document.getElementById("setup-area").style.display = "block";
 };
+
 
