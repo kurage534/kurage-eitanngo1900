@@ -7,9 +7,9 @@ const { parse } = require("csv-parse/sync");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-/* ===============================
-   PostgreSQL
-=============================== */
+// ===============================
+// PostgreSQL
+// ===============================
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -18,9 +18,9 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-/* ===============================
-   DB 初期化
-=============================== */
+// ===============================
+// DB 初期化（重複禁止）
+// ===============================
 async function initDB() {
   try {
     await pool.query(`
@@ -38,22 +38,21 @@ async function initDB() {
       CREATE TABLE IF NOT EXISTS miss_log (
         id SERIAL PRIMARY KEY,
         word TEXT NOT NULL UNIQUE,
-        miss_count INTEGER DEFAULT 1,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        miss_count INTEGER DEFAULT 1
       )
     `);
 
     console.log("✅ DB ready");
-  } catch (e) {
-    console.error("❌ DB init error", e);
+  } catch (err) {
+    console.error("❌ DB init error", err);
     process.exit(1);
   }
 }
 initDB();
 
-/* ===============================
-   単語取得
-=============================== */
+// ===============================
+// 単語取得
+// ===============================
 app.get("/api/words", async (req, res) => {
   try {
     let csv = await fs.readFile("words.csv", "utf-8");
@@ -63,16 +62,15 @@ app.get("/api/words", async (req, res) => {
       columns: true,
       skip_empty_lines: true
     });
-
     res.json(data);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: "words error" });
   }
 });
 
-/* ===============================
-   ランキング登録（重複防止）
-=============================== */
+// ===============================
+// ランキング登録（重複は無視）
+// ===============================
 app.post("/api/submit", async (req, res) => {
   const { name, score, time } = req.body;
 
@@ -97,27 +95,25 @@ app.post("/api/submit", async (req, res) => {
   }
 });
 
-/* ===============================
-   ランキング取得（全件・重複なし）
-=============================== */
+// ===============================
+// ランキング取得（全件表示）
+// ===============================
 app.get("/api/ranking", async (req, res) => {
   try {
     const r = await pool.query(`
       SELECT name, score, time
       FROM ranking
-      ORDER BY score DESC, time ASC, created_at ASC
+      ORDER BY score DESC, time ASC
     `);
-
     res.json(r.rows);
-  } catch (e) {
-    console.error(e);
+  } catch {
     res.status(500).json({ error: "ranking error" });
   }
 });
 
-/* ===============================
-   自分の順位取得
-=============================== */
+// ===============================
+// 自分の順位取得
+// ===============================
 app.get("/api/my-rank", async (req, res) => {
   const { name, score, time } = req.query;
 
@@ -126,27 +122,23 @@ app.get("/api/my-rank", async (req, res) => {
   }
 
   try {
-    const r = await pool.query(`
+    const result = await pool.query(`
       SELECT name, score, time
       FROM ranking
-      ORDER BY score DESC, time ASC, created_at ASC
+      ORDER BY score DESC, time ASC
     `);
 
-    let rank = null;
+    let rank = "未登録";
 
-    r.rows.forEach((row, index) => {
+    result.rows.forEach((r, i) => {
       if (
-        row.name === name &&
-        row.score === Number(score) &&
-        (time == null || row.time === Number(time))
+        r.name === name &&
+        r.score === Number(score) &&
+        r.time === Number(time)
       ) {
-        if (rank === null) rank = index + 1;
+        rank = i + 1;
       }
     });
-
-    if (rank === null) {
-      return res.json({ rank: "未登録" });
-    }
 
     res.json({ rank });
   } catch (e) {
@@ -155,124 +147,24 @@ app.get("/api/my-rank", async (req, res) => {
   }
 });
 
-/* ===============================
-   ミス記録
-=============================== */
+// ===============================
+// ミス記録
+// ===============================
 app.post("/api/miss", async (req, res) => {
   const { word } = req.body;
   if (!word) return res.sendStatus(400);
 
-  await pool.query(
-    `
+  await pool.query(`
     INSERT INTO miss_log(word, miss_count)
     VALUES($1,1)
     ON CONFLICT(word)
-    DO UPDATE SET miss_count = miss_log.miss_count + 1,
-                  updated_at = CURRENT_TIMESTAMP
-    `,
-    [word]
-  );
+    DO UPDATE SET miss_count = miss_log.miss_count + 1
+  `, [word]);
 
   res.json({ result: "ok" });
 });
 
-/* ===============================
-   管理者ログイン
-=============================== */
-app.post("/api/admin/login", (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
-
-  if (req.body.pass === ADMIN_PASS) {
-    return res.json({ result: "ok" });
-  }
-  res.status(403).json({ result: "ng" });
-});
-
-/* ===============================
-   管理者：ランキング全削除
-=============================== */
-app.post("/api/admin/delete", async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
-  if (req.body.pass !== ADMIN_PASS) {
-    return res.sendStatus(403);
-  }
-
-  await pool.query("DELETE FROM ranking");
-  res.json({ result: "deleted" });
-});
-
-/* ===============================
-   管理者：特定の名前だけ削除
-=============================== */
-app.post("/api/admin/delete-by-name", async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
-  const { name, pass } = req.body;
-
-  if (pass !== ADMIN_PASS) {
-    return res.sendStatus(403);
-  }
-
-  const r = await pool.query(
-    "DELETE FROM ranking WHERE name=$1",
-    [name]
-  );
-
-  res.json({ deleted: r.rowCount });
-});
-
-/* ===============================
-   管理者：ランキングCSV
-=============================== */
-app.get("/api/admin/export/ranking", async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
-  if (req.query.pass !== ADMIN_PASS) {
-    return res.sendStatus(403);
-  }
-
-  const r = await pool.query(`
-    SELECT name, score, time, created_at
-    FROM ranking
-    ORDER BY score DESC, time ASC
-  `);
-
-  let csv = "name,score,time,created_at\n";
-  for (const row of r.rows) {
-    csv += `"${row.name}",${row.score},${row.time ?? ""},${row.created_at}\n`;
-  }
-
-  res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader("Content-Disposition", "attachment; filename=ranking.csv");
-  res.send(csv);
-});
-
-/* ===============================
-   管理者：ミス分析CSV
-=============================== */
-app.get("/api/admin/export/miss", async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
-  if (req.query.pass !== ADMIN_PASS) {
-    return res.sendStatus(403);
-  }
-
-  const r = await pool.query(`
-    SELECT word, miss_count
-    FROM miss_log
-    ORDER BY miss_count DESC
-  `);
-
-  let csv = "word,miss_count\n";
-  for (const row of r.rows) {
-    csv += `"${row.word}",${row.miss_count}\n`;
-  }
-
-  res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader("Content-Disposition", "attachment; filename=miss.csv");
-  res.send(csv);
-});
-
-/* ===============================
-   起動
-=============================== */
+// ===============================
 app.listen(PORT, () => {
   console.log("🚀 server running on", PORT);
 });
