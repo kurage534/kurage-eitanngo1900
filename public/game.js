@@ -88,6 +88,7 @@ function showQuestion() {
     document.getElementById("score-area").textContent =
       `スコア：${score}点 / 時間：${format(elapsed)}`;
 
+    localStorage.setItem("playerName", name);
     localStorage.setItem("score", score);
     localStorage.setItem("time", elapsed);
     localStorage.setItem("mode", mode); // ★ 追加
@@ -239,6 +240,7 @@ document.getElementById("restart-btn").onclick = () => {
   document.getElementById("game-area").style.display = "none";
   document.getElementById("setup-area").style.display = "block";
 };
+
 
 
 
