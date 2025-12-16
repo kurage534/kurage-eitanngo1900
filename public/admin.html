@@ -99,6 +99,14 @@ if (sessionStorage.getItem("ADMIN_LOGIN") !== "YES") {
   </div>
 
   <div id="msg"></div>
+  <!-- 📊 ランキング一覧 -->
+<div class="admin-section safe">
+  <h3>📊 現在のランキング</h3>
+  <ul id="admin-ranking-list" style="list-style:none; padding:0;">
+    <li>読み込み中...</li>
+  </ul>
+</div>
+
 </div>
 
 
@@ -129,6 +137,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!pass) {
     msg.textContent = "パスワードを入力してください";
     msg.className = "msg-ng";
+        loadAdminRanking(); // ← ★ここ！！
+
     return;
   }
 
@@ -180,13 +190,55 @@ document.getElementById("delete-by-name-btn").onclick = async () => {
 
   delMsg.textContent = `「${name}」を ${data.deleted} 件削除しました`;
   delMsg.className = "msg-ok";
+      loadAdminRanking(); // ← ★ここ！！
+
 };
 
 
   
 });
+<script>
+async function loadAdminRanking() {
+  const list = document.getElementById("admin-ranking-list");
+  if (!list) return;
+
+  list.innerHTML = "<li>読み込み中...</li>";
+
+  try {
+    const res = await fetch("/api/ranking");
+    const data = await res.json();
+
+    list.innerHTML = "";
+
+    if (!data.length) {
+      list.innerHTML = "<li>ランキングは空です</li>";
+      return;
+    }
+
+    data.forEach((r, i) => {
+      const li = document.createElement("li");
+      li.style.background = "#f7f7f7";
+      li.style.margin = "6px 0";
+      li.style.padding = "10px";
+      li.style.borderRadius = "8px";
+
+      li.textContent =
+        `${i + 1}位｜${r.name}｜${r.score}点｜${r.time ?? "-"}秒`;
+
+      list.appendChild(li);
+    });
+  } catch {
+    list.innerHTML = "<li>取得に失敗しました</li>";
+  }
+}
+
+// 初期表示
+loadAdminRanking();
+</script>
+
 </script>
 
 </body>
 </html>
+
 
