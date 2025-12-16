@@ -67,8 +67,8 @@ async function loadRanking() {
 =============================== */
 async function loadMyRank() {
   const name = localStorage.getItem("playerName");
-  const score = localStorage.getItem("score");
-  const time = localStorage.getItem("time");
+  const score = Number(localStorage.getItem("score"));
+  const time = Number(localStorage.getItem("time"));
 
   if (!name || !score) return;
 
@@ -137,3 +137,4 @@ loadMyRank();
 
 </body>
 </html>
+
