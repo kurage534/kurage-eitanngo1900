@@ -1,69 +1,48 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>管理者ログイン</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>管理者ログイン</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
 
 <h1>管理者ログイン</h1>
 
-<div id="admin-box">
-  <input
-    id="pass"
-    type="password"
-    placeholder="管理者パスワード"
-    autocomplete="off"
-  >
+<input id="pass" type="password" placeholder="パスワード">
+<button id="login">ログイン</button>
 
-  <button id="loginBtn">ログイン</button>
-
-  <div id="msg"></div>
-</div>
-
-<div style="text-align:center;margin-top:20px;">
-  <a href="index.html">← 戻る</a>
-</div>
+<p id="msg"></p>
 
 <script>
-document.getElementById("loginBtn").addEventListener("click", async () => {
-  const pass = document.getElementById("pass").value.trim();
+document.getElementById("login").onclick = async () => {
+  const pass = document.getElementById("pass").value;
   const msg = document.getElementById("msg");
-
-  msg.textContent = "";
-
-  if (!pass) {
-    msg.textContent = "パスワードを入力してください";
-    msg.style.color = "red";
-    return;
-  }
 
   try {
     const res = await fetch("/api/admin/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ pass })
     });
 
-    const data = await res.json();
-
-    if (res.ok && data.result === "ok") {
-      // ★ ここが最重要
-      sessionStorage.setItem("ADMIN_LOGIN", "YES");
-      location.href = "admin.html";
+    if (!res.ok) {
+      msg.textContent = "パスワードが違います";
       return;
     }
 
-    msg.textContent = "パスワードが違います";
-    msg.style.color = "red";
+    const data = await res.json();
 
+    if (data.result === "ok") {
+      sessionStorage.setItem("ADMIN_LOGIN", "YES");
+      location.href = "admin.html";
+    }
   } catch (e) {
     msg.textContent = "通信エラー";
-    msg.style.color = "red";
   }
-});
+};
 </script>
 
 </body>
