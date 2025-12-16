@@ -9,9 +9,11 @@
 <body>
 
 <h1>ランキング</h1>
-  <div id="my-rank" style="display:none; margin-bottom:15px;"></div>
 
+<!-- 自分の順位 -->
+<div id="my-rank" style="display:none; margin-bottom:15px;"></div>
 
+<!-- ランキング一覧 -->
 <ul id="ranking-list" style="list-style:none; padding:0;">
   <li>読み込み中...</li>
 </ul>
@@ -19,14 +21,18 @@
 <a href="game.html">← ゲームに戻る</a>
 
 <script>
+/* =========================
+   ランキング表示
+========================= */
 async function loadRanking() {
   const list = document.getElementById("ranking-list");
   list.innerHTML = "<li>読み込み中...</li>";
 
   try {
     const res = await fetch("/api/ranking");
-    const data = await res.json();
+    if (!res.ok) throw new Error();
 
+    const data = await res.json();
     list.innerHTML = "";
 
     if (!data.length) {
@@ -46,13 +52,15 @@ async function loadRanking() {
 
       list.appendChild(li);
     });
-  } catch {
+  } catch (e) {
+    console.error(e);
     list.innerHTML = "<li>ランキングの取得に失敗しました</li>";
   }
 }
 
-loadRanking();
-<script>
+/* =========================
+   自分の順位表示（失敗してもOK）
+========================= */
 async function loadMyRank() {
   const name = localStorage.getItem("playerName");
   const score = localStorage.getItem("score");
@@ -64,6 +72,8 @@ async function loadMyRank() {
     const res = await fetch(
       `/api/my-rank?name=${encodeURIComponent(name)}&score=${score}&time=${time}`
     );
+    if (!res.ok) return;
+
     const data = await res.json();
 
     const box = document.getElementById("my-rank");
@@ -73,19 +83,16 @@ async function loadMyRank() {
     box.style.borderRadius = "12px";
     box.style.textAlign = "center";
     box.style.fontSize = "1.2rem";
-
     box.textContent = `🎉 あなたの順位：${data.rank} 位`;
   } catch {
-    // 失敗してもランキング自体は表示される
+    // 何もしない（ランキングは正常表示される）
   }
 }
 
+/* 初期実行 */
 loadRanking();
 loadMyRank();
-</script>
-  
 </script>
 
 </body>
 </html>
-
