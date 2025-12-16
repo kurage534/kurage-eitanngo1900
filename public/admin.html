@@ -86,6 +86,7 @@ if (sessionStorage.getItem("ADMIN_LOGIN") !== "YES") {
 
   <div id="msg"></div>
 </div>
+  
 
 <a href="index.html">← ホームへ戻る</a>
 
@@ -150,6 +151,45 @@ document.getElementById("deleteBtn").onclick = async () => {
 };
 </script>
 
+  <script>
+document.getElementById("delete-by-name-btn").onclick = async () => {
+  const name = document.getElementById("delete-name").value.trim();
+  const pass = document.getElementById("admin-pass").value;
+  const msg = document.getElementById("delete-msg");
+
+  if (!name || !pass) {
+    msg.textContent = "名前とパスワードを入力してください";
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/admin/delete-by-name", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, pass })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      msg.textContent = "パスワードが違います";
+      return;
+    }
+
+    msg.textContent =
+      `「${name}」を ${data.deleted} 件削除しました`;
+
+    // ランキング再読み込み（既存関数があれば呼ぶ）
+    if (typeof loadRanking === "function") {
+      loadRanking();
+    }
+  } catch {
+    msg.textContent = "通信エラー";
+  }
+};
+</script>
+
 </body>
 </html>
+
 
