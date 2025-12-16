@@ -111,6 +111,14 @@ document.getElementById("csvBtn").onclick = () => {
   window.location.href =
     `/api/admin/export/ranking?pass=${encodeURIComponent(pass)}`;
 };
+  <h3>🔴 特定の名前を削除</h3>
+
+<input id="delete-name" placeholder="削除する名前">
+<input id="admin-pass" type="password" placeholder="管理者パスワード">
+<button id="delete-by-name-btn">この名前を削除</button>
+
+<div id="delete-msg" style="margin-top:10px;"></div>
+
 
 /* ランキング全削除 */
 document.getElementById("deleteBtn").onclick = async () => {
@@ -144,3 +152,4 @@ document.getElementById("deleteBtn").onclick = async () => {
 
 </body>
 </html>
+
