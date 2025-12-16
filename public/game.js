@@ -47,14 +47,12 @@ function commitTime() {
    ゲーム開始
 ====================== */
 document.getElementById("start-btn").addEventListener("click", () => {
-  document.body.classList.add("playing");
-
   if (allQuestions.length === 0) {
     alert("単語を読み込み中です。少し待ってください");
     return;
   }
 
-  mode = document.getElementById("mode").value;
+  mode = document.getElementById("mode")?.value || "write";
   const sel = document.getElementById("qcount").value;
 
   total = sel === "all" ? allQuestions.length : Number(sel);
@@ -88,10 +86,10 @@ function showQuestion() {
     document.getElementById("score-area").textContent =
       `スコア：${score}点 / 時間：${format(elapsed)}`;
 
-    localStorage.setItem("playerName", name);
+    // ✅ 正しい保存（ここが重要）
     localStorage.setItem("score", score);
     localStorage.setItem("time", elapsed);
-    localStorage.setItem("mode", mode); // ★ 追加
+    localStorage.setItem("mode", mode);
     localStorage.setItem("CAN_REGISTER", "YES");
 
     document.getElementById("answer").style.display = "none";
@@ -166,9 +164,9 @@ function checkChoice(selected, correct) {
 }
 
 /* ======================
-   記述式回答
+   記述式
 ====================== */
-document.getElementById("submit-answer").addEventListener("click", async () => {
+document.getElementById("submit-answer").addEventListener("click", () => {
   if (!answering) return;
 
   answering = false;
@@ -209,41 +207,24 @@ document.getElementById("next-btn").addEventListener("click", () => {
   showQuestion();
 });
 
-/* Enter */
+/* Enterキー制御 */
 window.addEventListener("keydown", e => {
   if (e.key !== "Enter") return;
-
-  // 回答中
-  if (answering) {
-    // 記述式だけ Enter を有効にする
-    if (mode === "write") {
-      document.getElementById("submit-answer").click();
-    }
-    // 四択式では何もしない
-    return;
+  if (answering && mode === "write") {
+    document.getElementById("submit-answer").click();
+  } else if (!answering) {
+    document.getElementById("next-btn").click();
   }
-
-  // 回答後は「次へ」
-  document.getElementById("next-btn").click();
 });
-
 
 /* ランキング */
 document.getElementById("to-ranking").onclick = () => {
   window.location.href = "ranking.html";
 };
-localStorage.setItem("CAN_REGISTER", "YES");
-
 
 /* 再プレイ */
 document.getElementById("restart-btn").onclick = () => {
   stopTimer();
-  document.body.classList.remove("playing");
   document.getElementById("game-area").style.display = "none";
   document.getElementById("setup-area").style.display = "block";
 };
-
-
-
-
-
