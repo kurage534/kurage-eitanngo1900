@@ -232,6 +232,8 @@ window.addEventListener("keydown", e => {
 document.getElementById("to-ranking").onclick = () => {
   window.location.href = "ranking.html";
 };
+localStorage.setItem("CAN_REGISTER", "YES");
+
 
 /* 再プレイ */
 document.getElementById("restart-btn").onclick = () => {
@@ -240,6 +242,7 @@ document.getElementById("restart-btn").onclick = () => {
   document.getElementById("game-area").style.display = "none";
   document.getElementById("setup-area").style.display = "block";
 };
+
 
 
 
