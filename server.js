@@ -8,7 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ===============================
-// PostgreSQL
+// PostgreSQL 接続
 // ===============================
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -19,10 +19,11 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 // ===============================
-// DB 初期化（重複禁止）
+// DB 初期化
 // ===============================
 async function initDB() {
   try {
+    // ランキング
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ranking (
         id SERIAL PRIMARY KEY,
@@ -34,11 +35,13 @@ async function initDB() {
       )
     `);
 
+    // ミスログ
     await pool.query(`
       CREATE TABLE IF NOT EXISTS miss_log (
         id SERIAL PRIMARY KEY,
         word TEXT NOT NULL UNIQUE,
-        miss_count INTEGER DEFAULT 1
+        miss_count INTEGER DEFAULT 1,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -63,13 +66,13 @@ app.get("/api/words", async (req, res) => {
       skip_empty_lines: true
     });
     res.json(data);
-  } catch {
+  } catch (e) {
     res.status(500).json({ error: "words error" });
   }
 });
 
 // ===============================
-// ランキング登録（重複は無視）
+// ランキング登録（重複防止）
 // ===============================
 app.post("/api/submit", async (req, res) => {
   const { name, score, time } = req.body;
@@ -80,11 +83,9 @@ app.post("/api/submit", async (req, res) => {
 
   try {
     await pool.query(
-      `
-      INSERT INTO ranking(name, score, time)
-      VALUES($1,$2,$3)
-      ON CONFLICT (name, score, time) DO NOTHING
-      `,
+      `INSERT INTO ranking(name, score, time)
+       VALUES($1,$2,$3)
+       ON CONFLICT (name, score, time) DO NOTHING`,
       [name, score, time]
     );
 
@@ -96,7 +97,7 @@ app.post("/api/submit", async (req, res) => {
 });
 
 // ===============================
-// ランキング取得（全件表示）
+// ランキング取得（上位10位）
 // ===============================
 app.get("/api/ranking", async (req, res) => {
   try {
@@ -104,45 +105,43 @@ app.get("/api/ranking", async (req, res) => {
       SELECT name, score, time
       FROM ranking
       ORDER BY score DESC, time ASC
+      LIMIT 10
     `);
     res.json(r.rows);
-  } catch {
+  } catch (e) {
     res.status(500).json({ error: "ranking error" });
   }
 });
 
 // ===============================
-// 自分の順位取得
+// 自分の順位取得（制限なし）
 // ===============================
 app.get("/api/my-rank", async (req, res) => {
   const { name, score, time } = req.query;
-
   if (!name || score === undefined) {
     return res.status(400).json({ error: "bad request" });
   }
 
   try {
-    const result = await pool.query(`
+    const r = await pool.query(`
       SELECT name, score, time
       FROM ranking
       ORDER BY score DESC, time ASC
     `);
 
     let rank = "未登録";
-
-    result.rows.forEach((r, i) => {
+    r.rows.forEach((row, i) => {
       if (
-        r.name === name &&
-        r.score === Number(score) &&
-        r.time === Number(time)
+        row.name === name &&
+        row.score === Number(score) &&
+        (time == null || row.time === Number(time))
       ) {
-        rank = i + 1;
+        if (rank === "未登録") rank = i + 1;
       }
     });
 
     res.json({ rank });
   } catch (e) {
-    console.error(e);
     res.status(500).json({ error: "my-rank error" });
   }
 });
@@ -158,10 +157,86 @@ app.post("/api/miss", async (req, res) => {
     INSERT INTO miss_log(word, miss_count)
     VALUES($1,1)
     ON CONFLICT(word)
-    DO UPDATE SET miss_count = miss_log.miss_count + 1
+    DO UPDATE SET
+      miss_count = miss_log.miss_count + 1,
+      updated_at = CURRENT_TIMESTAMP
   `, [word]);
 
   res.json({ result: "ok" });
+});
+
+// ===============================
+// 管理者：ランキング全削除
+// ===============================
+app.post("/api/admin/delete", async (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
+  if (req.body.pass !== ADMIN_PASS) return res.sendStatus(403);
+
+  await pool.query("DELETE FROM ranking");
+  res.json({ result: "deleted" });
+});
+
+// ===============================
+// 管理者：特定の名前を削除
+// ===============================
+app.post("/api/admin/delete-by-name", async (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
+  const { name, pass } = req.body;
+
+  if (pass !== ADMIN_PASS) return res.sendStatus(403);
+
+  const r = await pool.query(
+    "DELETE FROM ranking WHERE name=$1",
+    [name]
+  );
+
+  res.json({ deleted: r.rowCount });
+});
+
+// ===============================
+// 管理者：ランキング CSV
+// ===============================
+app.get("/api/admin/export/ranking", async (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
+  if (req.query.pass !== ADMIN_PASS) return res.sendStatus(403);
+
+  const r = await pool.query(`
+    SELECT name, score, time, created_at
+    FROM ranking
+    ORDER BY score DESC, time ASC
+  `);
+
+  let csv = "name,score,time,created_at\n";
+  r.rows.forEach(row => {
+    csv += `"${row.name}",${row.score},${row.time ?? ""},${row.created_at}\n`;
+  });
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", "attachment; filename=ranking.csv");
+  res.send(csv);
+});
+
+// ===============================
+// 管理者：ミス CSV
+// ===============================
+app.get("/api/admin/export/miss", async (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
+  if (req.query.pass !== ADMIN_PASS) return res.sendStatus(403);
+
+  const r = await pool.query(`
+    SELECT word, miss_count
+    FROM miss_log
+    ORDER BY miss_count DESC
+  `);
+
+  let csv = "word,miss_count\n";
+  r.rows.forEach(row => {
+    csv += `"${row.word}",${row.miss_count}\n`;
+  });
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", "attachment; filename=miss_analysis.csv");
+  res.send(csv);
 });
 
 // ===============================
