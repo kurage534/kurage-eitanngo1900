@@ -157,11 +157,30 @@ app.get("/api/my-rank", async (req, res) => {
   }
 });
 
+// ===============================
+// 管理者ログイン
+// ===============================
+app.post("/api/admin/login", (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
+
+  if (!req.body || !req.body.pass) {
+    return res.status(400).json({ error: "no password" });
+  }
+
+  if (req.body.pass === ADMIN_PASS) {
+    return res.json({ result: "ok" });
+  }
+
+  res.status(403).json({ result: "ng" });
+});
+
+
 
 
 // ===============================
 app.listen(PORT, () => {
   console.log("🚀 server running on", PORT);
 });
+
 
 
