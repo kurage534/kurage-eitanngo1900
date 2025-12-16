@@ -10,97 +10,46 @@
 
 <h1>ランキング</h1>
 
-<!-- モード切り替え -->
-<div id="mode-select" style="margin-bottom:15px; text-align:center;">
-  <button id="write-btn">記述式</button>
-  <button id="choice-btn">四択式</button>
-</div>
-
-<!-- ランキング表示 -->
 <ul id="ranking-list" style="list-style:none; padding:0;">
   <li>読み込み中...</li>
 </ul>
 
-<!-- 戻る -->
 <a href="game.html">← ゲームに戻る</a>
 
 <script>
-/* =========================
-   ランキング制御（完全版）
-========================= */
-
-const list = document.getElementById("ranking-list");
-const writeBtn = document.getElementById("write-btn");
-const choiceBtn = document.getElementById("choice-btn");
-
-// 保存されているモード or デフォルト
-let currentMode = localStorage.getItem("mode") || "write";
-
-// 初期表示
-updateButtons();
-loadRanking(currentMode);
-
-/* ランキング取得 */
-async function loadRanking(mode) {
+async function loadRanking() {
+  const list = document.getElementById("ranking-list");
   list.innerHTML = "<li>読み込み中...</li>";
 
   try {
-    const res = await fetch(`/api/ranking?mode=${mode}`);
-    if (!res.ok) throw new Error("fetch error");
-
+    const res = await fetch("/api/ranking");
     const data = await res.json();
+
     list.innerHTML = "";
 
-    if (!data || data.length === 0) {
-      list.innerHTML = "<li>まだランキングがありません</li>";
+    if (!data.length) {
+      list.innerHTML = "<li>まだ登録がありません</li>";
       return;
     }
 
     data.forEach((r, i) => {
       const li = document.createElement("li");
-
       li.style.background = "#f1f1f1";
       li.style.margin = "8px 0";
       li.style.padding = "12px";
       li.style.borderRadius = "10px";
 
-      const timeText =
-        r.time !== null && r.time !== undefined
-          ? `${r.time}秒`
-          : "-";
-
       li.textContent =
-        `${i + 1}位　${r.name}　${r.score}点　${timeText}`;
+        `${i + 1}位　${r.name}　${r.score}点　${r.time ?? "-"}秒`;
 
       list.appendChild(li);
     });
-
-  } catch (err) {
-    console.error(err);
+  } catch {
     list.innerHTML = "<li>ランキングの取得に失敗しました</li>";
   }
 }
 
-/* ボタン状態 */
-function updateButtons() {
-  writeBtn.disabled = currentMode === "write";
-  choiceBtn.disabled = currentMode === "choice";
-}
-
-/* モード切替 */
-writeBtn.onclick = () => {
-  currentMode = "write";
-  localStorage.setItem("mode", "write");
-  updateButtons();
-  loadRanking("write");
-};
-
-choiceBtn.onclick = () => {
-  currentMode = "choice";
-  localStorage.setItem("mode", "choice");
-  updateButtons();
-  loadRanking("choice");
-};
+loadRanking();
 </script>
 
 </body>
