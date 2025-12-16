@@ -49,7 +49,7 @@
       cursor: pointer;
       margin-top: 5px;
     }
-    #msg {
+    #msg, #delete-msg {
       margin-top: 15px;
       min-height: 1.5em;
       font-weight: bold;
@@ -64,7 +64,6 @@
 <body>
 
 <script>
-/* 🔒 管理者ログインチェック */
 if (sessionStorage.getItem("ADMIN_LOGIN") !== "YES") {
   alert("管理者ログインが必要です");
   location.href = "admin-login.html";
@@ -78,118 +77,100 @@ if (sessionStorage.getItem("ADMIN_LOGIN") !== "YES") {
   <input id="pass" type="password" placeholder="管理パスワード">
   <div id="toggle-pass">パスワードを表示</div>
 
-  <!-- CSV エクスポート -->
   <button id="csvBtn">📥 ランキングCSVをダウンロード</button>
-
-  <!-- 全削除 -->
   <button id="deleteBtn">🗑 ランキング全削除</button>
+
+  <hr style="margin:20px 0;">
+
+  <h3>🔴 特定の名前を削除</h3>
+  <input id="delete-name" placeholder="削除する名前">
+  <input id="admin-pass" type="password" placeholder="管理者パスワード">
+  <button id="delete-by-name-btn">この名前を削除</button>
+  <div id="delete-msg"></div>
 
   <div id="msg"></div>
 </div>
-  
 
 <a href="index.html">← ホームへ戻る</a>
 
 <script>
-const passInput = document.getElementById("pass");
-const msg = document.getElementById("msg");
+document.addEventListener("DOMContentLoaded", () => {
+  const passInput = document.getElementById("pass");
+  const msg = document.getElementById("msg");
 
-/* パスワード表示切替 */
-document.getElementById("toggle-pass").onclick = () => {
-  passInput.type = passInput.type === "password" ? "text" : "password";
-};
+  document.getElementById("toggle-pass").onclick = () => {
+    passInput.type = passInput.type === "password" ? "text" : "password";
+  };
 
-/* CSV ダウンロード */
-document.getElementById("csvBtn").onclick = () => {
-  const pass = passInput.value.trim();
-  if (!pass) {
-    msg.textContent = "パスワードを入力してください";
-    msg.style.color = "red";
-    return;
-  }
+  document.getElementById("csvBtn").onclick = () => {
+    const pass = passInput.value.trim();
+    if (!pass) {
+      msg.textContent = "パスワードを入力してください";
+      msg.style.color = "red";
+      return;
+    }
+    window.location.href =
+      `/api/admin/export/ranking?pass=${encodeURIComponent(pass)}`;
+  };
 
-  // ★ CSVはブラウザで直接DL
-  window.location.href =
-    `/api/admin/export/ranking?pass=${encodeURIComponent(pass)}`;
-};
-  <h3>🔴 特定の名前を削除</h3>
-
-<input id="delete-name" placeholder="削除する名前">
-<input id="admin-pass" type="password" placeholder="管理者パスワード">
-<button id="delete-by-name-btn">この名前を削除</button>
-
-<div id="delete-msg" style="margin-top:10px;"></div>
-
-
-/* ランキング全削除 */
-document.getElementById("deleteBtn").onclick = async () => {
-  const pass = passInput.value.trim();
-  if (!pass) {
-    msg.textContent = "パスワードを入力してください";
-    msg.style.color = "red";
-    return;
-  }
-
-  if (!confirm("本当にランキングを全削除しますか？")) return;
-
-  const res = await fetch("/api/admin/delete", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pass })
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    msg.textContent = data.error || "削除エラー";
-    msg.style.color = "red";
-    return;
-  }
-
-  msg.textContent = "ランキングを削除しました";
-  msg.style.color = "green";
-};
-</script>
-
-  <script>
-document.getElementById("delete-by-name-btn").onclick = async () => {
-  const name = document.getElementById("delete-name").value.trim();
-  const pass = document.getElementById("admin-pass").value;
-  const msg = document.getElementById("delete-msg");
-
-  if (!name || !pass) {
-    msg.textContent = "名前とパスワードを入力してください";
-    return;
-  }
-
-  try {
-    const res = await fetch("/api/admin/delete-by-name", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, pass })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      msg.textContent = "パスワードが違います";
+  document.getElementById("deleteBtn").onclick = async () => {
+    const pass = passInput.value.trim();
+    if (!pass) {
+      msg.textContent = "パスワードを入力してください";
+      msg.style.color = "red";
       return;
     }
 
-    msg.textContent =
-      `「${name}」を ${data.deleted} 件削除しました`;
+    if (!confirm("本当にランキングを全削除しますか？")) return;
 
-    // ランキング再読み込み（既存関数があれば呼ぶ）
-    if (typeof loadRanking === "function") {
-      loadRanking();
+    const res = await fetch("/api/admin/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pass })
+    });
+
+    if (!res.ok) {
+      msg.textContent = "削除エラー";
+      msg.style.color = "red";
+      return;
     }
-  } catch {
-    msg.textContent = "通信エラー";
-  }
-};
+
+    msg.textContent = "ランキングを削除しました";
+    msg.style.color = "green";
+  };
+
+  document.getElementById("delete-by-name-btn").onclick = async () => {
+    const name = document.getElementById("delete-name").value.trim();
+    const pass = document.getElementById("admin-pass").value;
+    const delMsg = document.getElementById("delete-msg");
+
+    if (!name || !pass) {
+      delMsg.textContent = "名前とパスワードを入力してください";
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/delete-by-name", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, pass })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        delMsg.textContent = "パスワードが違います";
+        return;
+      }
+
+      delMsg.textContent =
+        `「${name}」を ${data.deleted} 件削除しました`;
+    } catch {
+      delMsg.textContent = "通信エラー";
+    }
+  };
+});
 </script>
 
 </body>
 </html>
-
-
