@@ -160,6 +160,35 @@ body.playing #mode,
 body.playing label[for="mode"] {
   display: none;
 }
+.admin-section {
+  border-radius: 12px;
+  padding: 15px;
+  margin-top: 20px;
+}
+
+.safe {
+  background: #eafaf1;
+  border: 2px solid #2ecc71;
+}
+
+.danger {
+  background: #fdecea;
+  border: 2px solid #e74c3c;
+}
+
+.msg-ok {
+  color: green;
+}
+
+.msg-ng {
+  color: red;
+}
+
+.msg-warn {
+  color: #e67e22;
+}
+
+
 
 
 
