@@ -122,24 +122,46 @@ app.post("/api/miss", async (req, res) => {
 app.get("/api/my-rank", async (req, res) => {
   const { name, score, time } = req.query;
 
-  if (!name || !score) {
+  if (!name || score === undefined) {
     return res.status(400).json({ error: "bad request" });
   }
 
-  const result = await pool.query(`
-    SELECT COUNT(*) + 1 AS rank
-    FROM ranking
-    WHERE
-      score > $1
-      OR (score = $1 AND time < $2)
-  `, [score, time ?? 999999]);
+  try {
+    // ランキング全取得（順位計算用）
+    const result = await pool.query(
+      "SELECT name, score, time FROM ranking ORDER BY score DESC, time ASC"
+    );
 
-  res.json({ rank: Number(result.rows[0].rank) });
+    let rank = null;
+
+    result.rows.forEach((r, index) => {
+      if (
+        r.name === name &&
+        r.score === Number(score) &&
+        (time == null || r.time === Number(time))
+      ) {
+        if (rank === null) {
+          rank = index + 1;
+        }
+      }
+    });
+
+    if (rank === null) {
+      return res.json({ rank: "未登録" });
+    }
+
+    res.json({ rank });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "my-rank error" });
+  }
 });
+
 
 
 // ===============================
 app.listen(PORT, () => {
   console.log("🚀 server running on", PORT);
 });
+
 
