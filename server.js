@@ -174,6 +174,37 @@ app.post("/api/admin/login", (req, res) => {
   res.status(403).json({ result: "ng" });
 });
 
+// ===============================
+// 管理者：特定の名前のランキング削除
+// ===============================
+app.post("/api/admin/delete-by-name", async (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
+  const { pass, name } = req.body;
+
+  if (!pass || pass !== ADMIN_PASS) {
+    return res.status(403).json({ error: "forbidden" });
+  }
+
+  if (!name) {
+    return res.status(400).json({ error: "no name" });
+  }
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM ranking WHERE name = $1",
+      [name]
+    );
+
+    res.json({
+      result: "ok",
+      deleted: result.rowCount
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "delete error" });
+  }
+});
+
 
 
 
@@ -181,6 +212,7 @@ app.post("/api/admin/login", (req, res) => {
 app.listen(PORT, () => {
   console.log("🚀 server running on", PORT);
 });
+
 
 
 
