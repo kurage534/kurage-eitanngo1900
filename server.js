@@ -116,8 +116,30 @@ app.post("/api/miss", async (req, res) => {
 
   res.json({ result: "ok" });
 });
+// ===============================
+// 自分の順位取得
+// ===============================
+app.get("/api/my-rank", async (req, res) => {
+  const { name, score, time } = req.query;
+
+  if (!name || !score) {
+    return res.status(400).json({ error: "bad request" });
+  }
+
+  const result = await pool.query(`
+    SELECT COUNT(*) + 1 AS rank
+    FROM ranking
+    WHERE
+      score > $1
+      OR (score = $1 AND time < $2)
+  `, [score, time ?? 999999]);
+
+  res.json({ rank: Number(result.rows[0].rank) });
+});
+
 
 // ===============================
 app.listen(PORT, () => {
   console.log("🚀 server running on", PORT);
 });
+
