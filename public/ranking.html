@@ -9,6 +9,8 @@
 <body>
 
 <h1>ランキング</h1>
+  <div id="my-rank" style="display:none; margin-bottom:15px;"></div>
+
 
 <ul id="ranking-list" style="list-style:none; padding:0;">
   <li>読み込み中...</li>
@@ -50,7 +52,40 @@ async function loadRanking() {
 }
 
 loadRanking();
+<script>
+async function loadMyRank() {
+  const name = localStorage.getItem("playerName");
+  const score = localStorage.getItem("score");
+  const time = localStorage.getItem("time");
+
+  if (!name || !score) return;
+
+  try {
+    const res = await fetch(
+      `/api/my-rank?name=${encodeURIComponent(name)}&score=${score}&time=${time}`
+    );
+    const data = await res.json();
+
+    const box = document.getElementById("my-rank");
+    box.style.display = "block";
+    box.style.background = "#e8f3ff";
+    box.style.padding = "12px";
+    box.style.borderRadius = "12px";
+    box.style.textAlign = "center";
+    box.style.fontSize = "1.2rem";
+
+    box.textContent = `🎉 あなたの順位：${data.rank} 位`;
+  } catch {
+    // 失敗してもランキング自体は表示される
+  }
+}
+
+loadRanking();
+loadMyRank();
+</script>
+  
 </script>
 
 </body>
 </html>
+
