@@ -77,19 +77,30 @@ if (sessionStorage.getItem("ADMIN_LOGIN") !== "YES") {
   <input id="pass" type="password" placeholder="管理パスワード">
   <div id="toggle-pass">パスワードを表示</div>
 
-  <button id="csvBtn">📥 ランキングCSVをダウンロード</button>
-  <button id="deleteBtn">🗑 ランキング全削除</button>
+  <!-- 安全操作 -->
+  <div class="admin-section safe">
+    <h3>📥 エクスポート</h3>
+    <button id="csvBtn">ランキングCSVをダウンロード</button>
+  </div>
 
-  <hr style="margin:20px 0;">
+  <!-- 危険操作 -->
+  <div class="admin-section danger">
+    <h3>⚠ 危険操作</h3>
 
-  <h3>🔴 特定の名前を削除</h3>
-  <input id="delete-name" placeholder="削除する名前">
-  <input id="admin-pass" type="password" placeholder="管理者パスワード">
-  <button id="delete-by-name-btn">この名前を削除</button>
-  <div id="delete-msg"></div>
+    <button id="deleteBtn">🗑 ランキング全削除</button>
+
+    <hr>
+
+    <h4>🔴 特定の名前を削除</h4>
+    <input id="delete-name" placeholder="削除する名前">
+    <input id="admin-pass" type="password" placeholder="管理者パスワード">
+    <button id="delete-by-name-btn">この名前を削除</button>
+    <div id="delete-msg"></div>
+  </div>
 
   <div id="msg"></div>
 </div>
+
 
 <a href="index.html">← ホームへ戻る</a>
 
@@ -114,63 +125,68 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   document.getElementById("deleteBtn").onclick = async () => {
-    const pass = passInput.value.trim();
-    if (!pass) {
-      msg.textContent = "パスワードを入力してください";
-      msg.style.color = "red";
-      return;
-    }
+  const pass = passInput.value.trim();
+  if (!pass) {
+    msg.textContent = "パスワードを入力してください";
+    msg.className = "msg-ng";
+    return;
+  }
 
-    if (!confirm("本当にランキングを全削除しますか？")) return;
+  if (!confirm("⚠ 本当に全ランキングを削除しますか？\nこの操作は取り消せません")) {
+    return;
+  }
 
-    const res = await fetch("/api/admin/delete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pass })
-    });
+  const res = await fetch("/api/admin/delete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pass })
+  });
 
-    if (!res.ok) {
-      msg.textContent = "削除エラー";
-      msg.style.color = "red";
-      return;
-    }
+  if (!res.ok) {
+    msg.textContent = "削除に失敗しました";
+    msg.className = "msg-ng";
+    return;
+  }
 
-    msg.textContent = "ランキングを削除しました";
-    msg.style.color = "green";
-  };
+  msg.textContent = "ランキングをすべて削除しました";
+  msg.className = "msg-ok";
+};
+document.getElementById("delete-by-name-btn").onclick = async () => {
+  const name = document.getElementById("delete-name").value.trim();
+  const pass = document.getElementById("admin-pass").value;
+  const delMsg = document.getElementById("delete-msg");
 
-  document.getElementById("delete-by-name-btn").onclick = async () => {
-    const name = document.getElementById("delete-name").value.trim();
-    const pass = document.getElementById("admin-pass").value;
-    const delMsg = document.getElementById("delete-msg");
+  if (!name || !pass) {
+    delMsg.textContent = "名前とパスワードを入力してください";
+    delMsg.className = "msg-warn";
+    return;
+  }
 
-    if (!name || !pass) {
-      delMsg.textContent = "名前とパスワードを入力してください";
-      return;
-    }
+  if (!confirm(`「${name}」のランキングを削除しますか？`)) return;
 
-    try {
-      const res = await fetch("/api/admin/delete-by-name", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, pass })
-      });
+  const res = await fetch("/api/admin/delete-by-name", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, pass })
+  });
 
-      const data = await res.json();
+  const data = await res.json();
 
-      if (!res.ok) {
-        delMsg.textContent = "パスワードが違います";
-        return;
-      }
+  if (!res.ok) {
+    delMsg.textContent = "パスワードが違います";
+    delMsg.className = "msg-ng";
+    return;
+  }
 
-      delMsg.textContent =
-        `「${name}」を ${data.deleted} 件削除しました`;
-    } catch {
-      delMsg.textContent = "通信エラー";
-    }
-  };
+  delMsg.textContent = `「${name}」を ${data.deleted} 件削除しました`;
+  delMsg.className = "msg-ok";
+};
+
+
+  
 });
 </script>
 
 </body>
 </html>
+
