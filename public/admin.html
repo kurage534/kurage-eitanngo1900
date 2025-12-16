@@ -4,60 +4,48 @@
   <meta charset="UTF-8">
   <title>管理者ページ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <style>
     body {
-      font-family: sans-serif;
-      background: #f2f2f2;
-      padding: 15px;
+      font-family: system-ui, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
     }
     h1 {
       text-align: center;
     }
-    #admin-box {
+    .box {
       max-width: 420px;
-      margin: 30px auto;
-      padding: 20px;
-      border-radius: 12px;
+      margin: 20px auto;
       background: #fff;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      text-align: center;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.1);
     }
     input, button {
       width: 100%;
-      font-size: 1.1rem;
       padding: 14px;
+      font-size: 1rem;
       margin-top: 10px;
       border-radius: 10px;
       border: 1px solid #ccc;
     }
     button {
-      cursor: pointer;
       border: none;
-    }
-    #deleteBtn {
-      background: #ff4444;
-      color: #fff;
-    }
-    #csvBtn {
-      background: #2ecc71;
-      color: #fff;
-    }
-    #toggle-pass {
-      font-size: 0.9rem;
-      color: #0077ff;
       cursor: pointer;
-      margin-top: 5px;
+      font-weight: bold;
     }
-    #msg, #delete-msg {
-      margin-top: 15px;
+    .danger { background: #e74c3c; color: #fff; }
+    .success { background: #2ecc71; color: #fff; }
+    .msg {
+      margin-top: 10px;
       min-height: 1.5em;
       font-weight: bold;
+      text-align: center;
     }
     a {
       display: block;
-      margin-top: 20px;
       text-align: center;
+      margin-top: 20px;
     }
   </style>
 </head>
@@ -72,79 +60,42 @@ if (sessionStorage.getItem("ADMIN_LOGIN") !== "YES") {
 
 <h1>管理者ページ</h1>
 
-<div id="admin-box">
-
-  <input id="pass" type="password" placeholder="管理パスワード">
-  <div id="toggle-pass">パスワードを表示</div>
-
-  <!-- 安全操作 -->
-  <div class="admin-section safe">
-    <h3>📥 エクスポート</h3>
-    <button id="csvBtn">ランキングCSVをダウンロード</button>
-  </div>
-
-  <!-- 危険操作 -->
-  <div class="admin-section danger">
-    <h3>⚠ 危険操作</h3>
-
-    <button id="deleteBtn">🗑 ランキング全削除</button>
-
-    <hr>
-
-    <h4>🔴 特定の名前を削除</h4>
-    <input id="delete-name" placeholder="削除する名前">
-    <input id="admin-pass" type="password" placeholder="管理者パスワード">
-    <button id="delete-by-name-btn">この名前を削除</button>
-    <div id="delete-msg"></div>
-  </div>
-
-  <div id="msg"></div>
-  <!-- 📊 ランキング一覧 -->
-<div class="admin-section safe">
-  <h3>📊 現在のランキング</h3>
-  <ul id="admin-ranking-list" style="list-style:none; padding:0;">
-    <li>読み込み中...</li>
-  </ul>
+<div class="box">
+  <input id="pass" type="password" placeholder="管理者パスワード">
+  <button id="csvBtn" class="success">📥 ランキングCSVダウンロード</button>
+  <button id="deleteAllBtn" class="danger">🗑 ランキング全削除</button>
+  <div id="msg" class="msg"></div>
 </div>
 
+<div class="box">
+  <h3>🔴 特定の名前を削除</h3>
+  <input id="delete-name" placeholder="削除する名前">
+  <input id="admin-pass" type="password" placeholder="管理者パスワード">
+  <button id="delete-by-name-btn" class="danger">この名前を削除</button>
+  <div id="delete-msg" class="msg"></div>
 </div>
-
 
 <a href="index.html">← ホームへ戻る</a>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const passInput = document.getElementById("pass");
-  const msg = document.getElementById("msg");
+const msg = document.getElementById("msg");
 
-  document.getElementById("toggle-pass").onclick = () => {
-    passInput.type = passInput.type === "password" ? "text" : "password";
-  };
-
-  document.getElementById("csvBtn").onclick = () => {
-    const pass = passInput.value.trim();
-    if (!pass) {
-      msg.textContent = "パスワードを入力してください";
-      msg.style.color = "red";
-      return;
-    }
-    window.location.href =
-      `/api/admin/export/ranking?pass=${encodeURIComponent(pass)}`;
-  };
-
-  document.getElementById("deleteBtn").onclick = async () => {
-  const pass = passInput.value.trim();
+/* CSV */
+document.getElementById("csvBtn").onclick = () => {
+  const pass = document.getElementById("pass").value.trim();
   if (!pass) {
     msg.textContent = "パスワードを入力してください";
-    msg.className = "msg-ng";
-        loadAdminRanking(); // ← ★ここ！！
-
     return;
   }
+  location.href = `/api/admin/export/ranking?pass=${encodeURIComponent(pass)}`;
+};
 
-  if (!confirm("⚠ 本当に全ランキングを削除しますか？\nこの操作は取り消せません")) {
-    return;
-  }
+/* 全削除 */
+document.getElementById("deleteAllBtn").onclick = async () => {
+  const pass = document.getElementById("pass").value.trim();
+  if (!pass) return;
+
+  if (!confirm("本当に全削除しますか？")) return;
 
   const res = await fetch("/api/admin/delete", {
     method: "POST",
@@ -152,27 +103,19 @@ document.addEventListener("DOMContentLoaded", () => {
     body: JSON.stringify({ pass })
   });
 
-  if (!res.ok) {
-    msg.textContent = "削除に失敗しました";
-    msg.className = "msg-ng";
-    return;
-  }
-
-  msg.textContent = "ランキングをすべて削除しました";
-  msg.className = "msg-ok";
+  msg.textContent = res.ok ? "全削除しました" : "削除失敗";
 };
+
+/* 名前で削除 */
 document.getElementById("delete-by-name-btn").onclick = async () => {
   const name = document.getElementById("delete-name").value.trim();
   const pass = document.getElementById("admin-pass").value;
-  const delMsg = document.getElementById("delete-msg");
+  const msg2 = document.getElementById("delete-msg");
 
   if (!name || !pass) {
-    delMsg.textContent = "名前とパスワードを入力してください";
-    delMsg.className = "msg-warn";
+    msg2.textContent = "名前とパスワードを入力してください";
     return;
   }
-
-  if (!confirm(`「${name}」のランキングを削除しますか？`)) return;
 
   const res = await fetch("/api/admin/delete-by-name", {
     method: "POST",
@@ -181,64 +124,11 @@ document.getElementById("delete-by-name-btn").onclick = async () => {
   });
 
   const data = await res.json();
-
-  if (!res.ok) {
-    delMsg.textContent = "パスワードが違います";
-    delMsg.className = "msg-ng";
-    return;
-  }
-
-  delMsg.textContent = `「${name}」を ${data.deleted} 件削除しました`;
-  delMsg.className = "msg-ok";
-      loadAdminRanking(); // ← ★ここ！！
-
+  msg2.textContent = res.ok
+    ? `「${name}」を ${data.deleted} 件削除`
+    : "パスワードが違います";
 };
-
-
-  
-});
-<script>
-async function loadAdminRanking() {
-  const list = document.getElementById("admin-ranking-list");
-  if (!list) return;
-
-  list.innerHTML = "<li>読み込み中...</li>";
-
-  try {
-    const res = await fetch("/api/ranking");
-    const data = await res.json();
-
-    list.innerHTML = "";
-
-    if (!data.length) {
-      list.innerHTML = "<li>ランキングは空です</li>";
-      return;
-    }
-
-    data.forEach((r, i) => {
-      const li = document.createElement("li");
-      li.style.background = "#f7f7f7";
-      li.style.margin = "6px 0";
-      li.style.padding = "10px";
-      li.style.borderRadius = "8px";
-
-      li.textContent =
-        `${i + 1}位｜${r.name}｜${r.score}点｜${r.time ?? "-"}秒`;
-
-      list.appendChild(li);
-    });
-  } catch {
-    list.innerHTML = "<li>取得に失敗しました</li>";
-  }
-}
-
-// 初期表示
-loadAdminRanking();
-</script>
-
 </script>
 
 </body>
 </html>
-
-
