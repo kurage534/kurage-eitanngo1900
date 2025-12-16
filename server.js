@@ -24,14 +24,16 @@ app.use(express.static(path.join(__dirname, "public")));
 async function initDB() {
   try {
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS ranking (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        score INTEGER NOT NULL,
-        time INTEGER,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+  CREATE TABLE IF NOT EXISTS ranking (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    score INTEGER NOT NULL,
+    time INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(name, score, time)
+  )
+`);
+
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS miss_log (
@@ -72,32 +74,47 @@ app.get("/api/words", async (req, res) => {
 // ===============================
 app.post("/api/submit", async (req, res) => {
   const { name, score, time } = req.body;
+
   if (!name || typeof score !== "number") {
     return res.status(400).json({ error: "bad data" });
   }
 
   try {
     await pool.query(
-      "INSERT INTO ranking(name, score, time) VALUES($1,$2,$3)",
+      `
+      INSERT INTO ranking(name, score, time)
+      VALUES($1,$2,$3)
+      ON CONFLICT (name, score, time) DO NOTHING
+      `,
       [name, score, time]
     );
+
     res.json({ result: "ok" });
-  } catch {
+  } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "submit error" });
   }
 });
+
 
 // ===============================
 // ランキング取得（統合）
 // ===============================
 app.get("/api/ranking", async (req, res) => {
-  const r = await pool.query(`
-    SELECT name, score, time
-    FROM ranking
-    ORDER BY score DESC, time ASC
-    LIMIT 10
-  `);
-  res.json(r.rows);
+  try {
+    const r = await pool.query(`
+      SELECT DISTINCT name, score, time
+      FROM ranking
+      ORDER BY score DESC, time ASC, created_at ASC
+    `);
+
+    res.json(r.rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "ranking error" });
+  }
+});
+
 });
 
 // ===============================
@@ -212,6 +229,7 @@ app.post("/api/admin/delete-by-name", async (req, res) => {
 app.listen(PORT, () => {
   console.log("🚀 server running on", PORT);
 });
+
 
 
 
