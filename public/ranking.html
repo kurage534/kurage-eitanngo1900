@@ -10,35 +10,31 @@
 
 <h1>ランキング</h1>
 
-
 <!-- 自分の順位 -->
 <div id="my-rank" style="display:none; margin-bottom:15px;"></div>
 
-<!-- ▼▼▼ ランキング登録フォーム（追加） ▼▼▼ -->
+<!-- ランキング登録 -->
 <div id="register-area" style="display:none; margin-bottom:20px;">
   <input id="player-name" placeholder="名前を入力">
   <button id="register-btn">ランキングに登録</button>
-  <div id="register-msg" style="margin-top:10px;"></div>
+  <div id="register-msg"></div>
 </div>
 
-<ul id="ranking-list" style="list-style:none; padding:0;">
+<ul id="ranking-list">
   <li>読み込み中...</li>
 </ul>
 
 <a href="game.html">← ゲームに戻る</a>
 
 <script>
-/* ===============================
-   ランキング取得
-=============================== */
-async function loadRanking() {
-  const list = document.getElementById("ranking-list");
-  list.innerHTML = "<li>読み込み中...</li>";
+const list = document.getElementById("ranking-list");
 
+/* ランキング表示 */
+async function loadRanking() {
+  list.innerHTML = "<li>読み込み中...</li>";
   try {
     const res = await fetch("/api/ranking");
     const data = await res.json();
-
     list.innerHTML = "";
 
     if (!data.length) {
@@ -48,54 +44,31 @@ async function loadRanking() {
 
     data.forEach((r, i) => {
       const li = document.createElement("li");
-      li.style.background = "#f1f1f1";
-      li.style.margin = "8px 0";
-      li.style.padding = "12px";
-      li.style.borderRadius = "10px";
-
-      li.textContent =
-        `${i + 1}位　${r.name}　${r.score}点　${r.time ?? "-"}秒`;
-
+      li.textContent = `${i + 1}位 ${r.name} ${r.score}点 ${r.time ?? "-"}秒`;
       list.appendChild(li);
     });
   } catch {
-    list.innerHTML = "<li>ランキングの取得に失敗しました</li>";
+    list.innerHTML = "<li>取得失敗</li>";
   }
 }
 
-/* ===============================
-   自分の順位
-=============================== */
+/* 自分の順位 */
 async function loadMyRank() {
   const name = localStorage.getItem("playerName");
-  const score = Number(localStorage.getItem("score"));
-  const time = Number(localStorage.getItem("time"));
+  const score = localStorage.getItem("score");
+  const time = localStorage.getItem("time");
+  if (!name || !score) return;
 
-  if (!name || isNaN(score)) return; // ← 修正
+  const res = await fetch(`/api/my-rank?name=${encodeURIComponent(name)}&score=${score}&time=${time}`);
+  const data = await res.json();
 
-  try {
-    const res = await fetch(
-      `/api/my-rank?name=${encodeURIComponent(name)}&score=${score}&time=${time}`
-    );
-    const data = await res.json();
-
-    const box = document.getElementById("my-rank");
-    box.style.display = "block";
-    box.style.background = "#e8f3ff";
-    box.style.padding = "12px";
-    box.style.borderRadius = "12px";
-    box.style.textAlign = "center";
-    box.style.fontSize = "1.2rem";
-
-    box.textContent = `🎉 あなたの順位：${data.rank} 位`;
-  } catch {}
+  const box = document.getElementById("my-rank");
+  box.style.display = "block";
+  box.textContent = `🎉 あなたの順位：${data.rank} 位`;
 }
 
-/* ===============================
-   ランキング登録
-=============================== */
-const canRegister = localStorage.getItem("CAN_REGISTER");
-if (canRegister === "YES") {
+/* 登録 */
+if (localStorage.getItem("CAN_REGISTER") === "YES") {
   document.getElementById("register-area").style.display = "block";
 }
 
@@ -103,39 +76,22 @@ document.getElementById("register-btn").onclick = async () => {
   const name = document.getElementById("player-name").value.trim();
   const score = Number(localStorage.getItem("score"));
   const time = Number(localStorage.getItem("time"));
-  const msg = document.getElementById("register-msg");
 
-  if (!name) {
-    msg.textContent = "名前を入力してください";
-    return;
-  }
+  if (!name) return;
 
-  if (isNaN(score)) {
-    msg.textContent = "スコアが取得できません。もう一度プレイしてください";
-    return;
-  }
+  const res = await fetch("/api/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, score, time })
+  });
 
-  try {
-    const res = await fetch("/api/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, score, time })
-    });
-
-    const data = await res.json();
-
-    if (res.ok && data.result === "ok") {
-      msg.textContent = "登録しました！";
-      localStorage.setItem("playerName", name);
-      localStorage.removeItem("CAN_REGISTER");
-      document.getElementById("register-area").style.display = "none";
-      loadRanking();
-      loadMyRank();
-    } else {
-      msg.textContent = data.error || "登録できませんでした";
-    }
-  } catch {
-    msg.textContent = "通信エラー";
+  const data = await res.json();
+  if (data.result === "ok") {
+    localStorage.setItem("playerName", name);
+    localStorage.removeItem("CAN_REGISTER");
+    document.getElementById("register-area").style.display = "none";
+    loadRanking();
+    loadMyRank();
   }
 };
 
@@ -143,10 +99,5 @@ loadRanking();
 loadMyRank();
 </script>
 
-
 </body>
 </html>
-
-
-
-
