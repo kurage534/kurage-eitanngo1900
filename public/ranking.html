@@ -71,7 +71,7 @@ async function loadMyRank() {
   const score = Number(localStorage.getItem("score"));
   const time = Number(localStorage.getItem("time"));
 
-  if (!name || !score) return;
+  if (!name || isNaN(score)) return; // ← 修正
 
   try {
     const res = await fetch(
@@ -103,9 +103,15 @@ document.getElementById("register-btn").onclick = async () => {
   const name = document.getElementById("player-name").value.trim();
   const score = Number(localStorage.getItem("score"));
   const time = Number(localStorage.getItem("time"));
+  const msg = document.getElementById("register-msg");
 
   if (!name) {
-    document.getElementById("register-msg").textContent = "名前を入力してください";
+    msg.textContent = "名前を入力してください";
+    return;
+  }
+
+  if (isNaN(score)) {
+    msg.textContent = "スコアが取得できません。もう一度プレイしてください";
     return;
   }
 
@@ -118,17 +124,18 @@ document.getElementById("register-btn").onclick = async () => {
 
     const data = await res.json();
 
-    if (data.result === "ok") {
-      document.getElementById("register-msg").textContent = "登録しました！";
+    if (res.ok && data.result === "ok") {
+      msg.textContent = "登録しました！";
       localStorage.setItem("playerName", name);
       localStorage.removeItem("CAN_REGISTER");
+      document.getElementById("register-area").style.display = "none";
       loadRanking();
       loadMyRank();
     } else {
-      document.getElementById("register-msg").textContent = "すでに登録済みです";
+      msg.textContent = data.error || "登録できませんでした";
     }
   } catch {
-    document.getElementById("register-msg").textContent = "通信エラー";
+    msg.textContent = "通信エラー";
   }
 };
 
@@ -136,8 +143,10 @@ loadRanking();
 loadMyRank();
 </script>
 
+
 </body>
 </html>
+
 
 
 
