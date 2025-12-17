@@ -7,9 +7,9 @@ const { parse } = require("csv-parse/sync");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ===============================
-// PostgreSQL 接続
-// ===============================
+/* ===============================
+   PostgreSQL
+=============================== */
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -18,12 +18,11 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// ===============================
-// DB 初期化
-// ===============================
+/* ===============================
+   DB 初期化（超重要）
+=============================== */
 async function initDB() {
   try {
-    // ランキング
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ranking (
         id SERIAL PRIMARY KEY,
@@ -35,13 +34,11 @@ async function initDB() {
       )
     `);
 
-    // ミスログ
     await pool.query(`
       CREATE TABLE IF NOT EXISTS miss_log (
         id SERIAL PRIMARY KEY,
         word TEXT NOT NULL UNIQUE,
-        miss_count INTEGER DEFAULT 1,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        miss_count INTEGER DEFAULT 1
       )
     `);
 
@@ -53,9 +50,9 @@ async function initDB() {
 }
 initDB();
 
-// ===============================
-// 単語取得
-// ===============================
+/* ===============================
+   単語取得
+=============================== */
 app.get("/api/words", async (req, res) => {
   try {
     let csv = await fs.readFile("words.csv", "utf-8");
@@ -65,32 +62,33 @@ app.get("/api/words", async (req, res) => {
       columns: true,
       skip_empty_lines: true
     });
+
     res.json(data);
   } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "words error" });
   }
 });
 
-// ===============================
-// ランキング登録（500エラー完全対策版）
-// ===============================
+/* ===============================
+   ランキング登録（500完全対策版）
+=============================== */
 app.post("/api/submit", async (req, res) => {
-  let { name, score, time } = req.body;
-
-  // 型を安全に補正
-  score = Number(score);
-  time = Number(time);
-
-  if (!name || Number.isNaN(score)) {
-    return res.status(400).json({ error: "bad data" });
-  }
-
-  // time が NaN の場合は null にする
-  if (Number.isNaN(time)) {
-    time = null;
-  }
-
   try {
+    let { name, score, time } = req.body;
+
+    name = typeof name === "string" ? name.trim() : "";
+    score = Number(score);
+    time = Number(time);
+
+    if (!name || Number.isNaN(score)) {
+      return res.status(400).json({ error: "bad data" });
+    }
+
+    if (Number.isNaN(time)) {
+      time = null;
+    }
+
     await pool.query(
       `
       INSERT INTO ranking(name, score, time)
@@ -102,156 +100,93 @@ app.post("/api/submit", async (req, res) => {
 
     res.json({ result: "ok" });
   } catch (e) {
-    console.error("❌ submit error:", e);
+    console.error("❌ submit error", e);
     res.status(500).json({ error: "submit error" });
   }
 });
 
-// ===============================
-// ランキング取得（上位10位）
-// ===============================
+/* ===============================
+   ランキング取得（全件表示）
+=============================== */
 app.get("/api/ranking", async (req, res) => {
   try {
     const r = await pool.query(`
       SELECT name, score, time
       FROM ranking
       ORDER BY score DESC, time ASC
-      LIMIT 10
     `);
     res.json(r.rows);
   } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "ranking error" });
   }
 });
 
-// ===============================
-// 自分の順位取得（制限なし）
-// ===============================
+/* ===============================
+   自分の順位取得
+=============================== */
 app.get("/api/my-rank", async (req, res) => {
-  const { name, score, time } = req.query;
-  if (!name || score === undefined) {
-    return res.status(400).json({ error: "bad request" });
-  }
-
   try {
+    const name = req.query.name;
+    const score = Number(req.query.score);
+    const time = Number(req.query.time);
+
+    if (!name || Number.isNaN(score)) {
+      return res.status(400).json({ error: "bad request" });
+    }
+
     const r = await pool.query(`
       SELECT name, score, time
       FROM ranking
       ORDER BY score DESC, time ASC
     `);
 
-    let rank = "未登録";
-    r.rows.forEach((row, i) => {
+    let rank = null;
+    r.rows.forEach((row, index) => {
       if (
         row.name === name &&
-        row.score === Number(score) &&
-        (time == null || row.time === Number(time))
+        row.score === score &&
+        (Number.isNaN(time) || row.time === time)
       ) {
-        if (rank === "未登録") rank = i + 1;
+        if (rank === null) rank = index + 1;
       }
     });
 
-    res.json({ rank });
+    res.json({ rank: rank ?? "未登録" });
   } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "my-rank error" });
   }
 });
 
-// ===============================
-// ミス記録
-// ===============================
+/* ===============================
+   ミス記録
+=============================== */
 app.post("/api/miss", async (req, res) => {
-  const { word } = req.body;
-  if (!word) return res.sendStatus(400);
+  try {
+    const { word } = req.body;
+    if (!word) return res.sendStatus(400);
 
-  await pool.query(`
-    INSERT INTO miss_log(word, miss_count)
-    VALUES($1,1)
-    ON CONFLICT(word)
-    DO UPDATE SET
-      miss_count = miss_log.miss_count + 1,
-      updated_at = CURRENT_TIMESTAMP
-  `, [word]);
+    await pool.query(
+      `
+      INSERT INTO miss_log(word, miss_count)
+      VALUES ($1,1)
+      ON CONFLICT(word)
+      DO UPDATE SET miss_count = miss_log.miss_count + 1
+      `,
+      [word]
+    );
 
-  res.json({ result: "ok" });
+    res.json({ result: "ok" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "miss error" });
+  }
 });
 
-// ===============================
-// 管理者：ランキング全削除
-// ===============================
-app.post("/api/admin/delete", async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
-  if (req.body.pass !== ADMIN_PASS) return res.sendStatus(403);
-
-  await pool.query("DELETE FROM ranking");
-  res.json({ result: "deleted" });
-});
-
-// ===============================
-// 管理者：特定の名前を削除
-// ===============================
-app.post("/api/admin/delete-by-name", async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
-  const { name, pass } = req.body;
-
-  if (pass !== ADMIN_PASS) return res.sendStatus(403);
-
-  const r = await pool.query(
-    "DELETE FROM ranking WHERE name=$1",
-    [name]
-  );
-
-  res.json({ deleted: r.rowCount });
-});
-
-// ===============================
-// 管理者：ランキング CSV
-// ===============================
-app.get("/api/admin/export/ranking", async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
-  if (req.query.pass !== ADMIN_PASS) return res.sendStatus(403);
-
-  const r = await pool.query(`
-    SELECT name, score, time, created_at
-    FROM ranking
-    ORDER BY score DESC, time ASC
-  `);
-
-  let csv = "name,score,time,created_at\n";
-  r.rows.forEach(row => {
-    csv += `"${row.name}",${row.score},${row.time ?? ""},${row.created_at}\n`;
-  });
-
-  res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader("Content-Disposition", "attachment; filename=ranking.csv");
-  res.send(csv);
-});
-
-// ===============================
-// 管理者：ミス CSV
-// ===============================
-app.get("/api/admin/export/miss", async (req, res) => {
-  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
-  if (req.query.pass !== ADMIN_PASS) return res.sendStatus(403);
-
-  const r = await pool.query(`
-    SELECT word, miss_count
-    FROM miss_log
-    ORDER BY miss_count DESC
-  `);
-
-  let csv = "word,miss_count\n";
-  r.rows.forEach(row => {
-    csv += `"${row.word}",${row.miss_count}\n`;
-  });
-
-  res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader("Content-Disposition", "attachment; filename=miss_analysis.csv");
-  res.send(csv);
-});
-
-// ===============================
+/* ===============================
+   サーバー起動
+=============================== */
 app.listen(PORT, () => {
   console.log("🚀 server running on", PORT);
 });
-
