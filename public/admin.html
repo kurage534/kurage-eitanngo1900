@@ -20,6 +20,12 @@
 <!-- 管理画面 -->
 <div id="admin-area" style="display:none;">
   <h2>ランキング一覧</h2>
+
+  <!-- CSVエクスポート -->
+<button id="export-csv-btn" style="margin-bottom:15px;">
+  📥 ランキングCSVをダウンロード
+</button>
+
   <ul id="admin-ranking" style="list-style:none; padding:0;"></ul>
 </div>
 
@@ -109,3 +115,4 @@ async function deleteEntry(name, score) {
 
 </body>
 </html>
+
