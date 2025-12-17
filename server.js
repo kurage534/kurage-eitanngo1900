@@ -267,8 +267,41 @@ app.get("/api/admin/export/miss", async (req, res) => {
   res.setHeader("Content-Disposition", "attachment; filename=miss_analysis.csv");
   res.send(csv);
 });
+// ===============================
+// 管理者：名前指定でランキング削除
+// ===============================
+app.post("/api/admin/delete-by-name", async (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
+  const { pass, name } = req.body;
+
+  if (pass !== ADMIN_PASS) {
+    return res.status(403).json({ error: "password incorrect" });
+  }
+
+  if (!name) {
+    return res.status(400).json({ error: "name required" });
+  }
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM ranking WHERE name = $1",
+      [name]
+    );
+
+    if (result.rowCount === 0) {
+      return res.json({ result: "not found" });
+    }
+
+    res.json({ result: "deleted", count: result.rowCount });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "delete error" });
+  }
+});
+
 
 // ===============================
 app.listen(PORT, () => {
   console.log("🚀 server running on", PORT);
 });
+
