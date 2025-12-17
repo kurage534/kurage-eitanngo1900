@@ -111,8 +111,23 @@ async function deleteEntry(name, score) {
     alert("削除できませんでした");
   }
 }
+/* ===============================
+   CSVエクスポート
+=============================== */
+document.getElementById("export-csv-btn").onclick = () => {
+  if (!adminPass) {
+    alert("ログインしてください");
+    return;
+  }
+
+  // ダウンロード開始
+  window.location.href =
+    `/api/admin/export/ranking?pass=${encodeURIComponent(adminPass)}`;
+};
+
 </script>
 
 </body>
 </html>
+
 
