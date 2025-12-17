@@ -2,250 +2,109 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>管理者ページ</title>
+  <title>管理者：ランキング管理</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #f2f2f2;
-      padding: 15px;
-      margin: 0;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .box {
-      max-width: 500px;
-      margin: 20px auto;
-      padding: 20px;
-      border-radius: 14px;
-      background: #fff;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    input, button {
-      width: 100%;
-      font-size: 1.1rem;
-      padding: 14px;
-      margin-top: 10px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-    }
-    button {
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .danger {
-      background: #ff4444;
-      color: #fff;
-    }
-    .success {
-      background: #2ecc71;
-      color: #fff;
-    }
-    .info {
-      background: #3498db;
-      color: #fff;
-    }
-    #msg, #delete-msg {
-      margin-top: 10px;
-      min-height: 1.2em;
-      font-weight: bold;
-      text-align: center;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    th, td {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-      text-align: center;
-      font-size: 0.95rem;
-    }
-    th {
-      background: #f0f0f0;
-    }
-    a {
-      display: block;
-      text-align: center;
-      margin: 20px 0;
-      color: #555;
-      text-decoration: none;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<script>
-/* 🔒 管理者ログインチェック */
-if (sessionStorage.getItem("ADMIN_LOGIN") !== "YES") {
-  alert("管理者ログインが必要です");
-  location.href = "admin-login.html";
-}
-</script>
+<h1>🔒 管理者画面</h1>
 
-<h1>🔐 管理者ページ</h1>
-
-<!-- パスワード -->
-<div class="box">
-  <h3>管理者操作</h3>
+<!-- 管理者ログイン -->
+<div id="login-area">
   <input id="admin-pass" type="password" placeholder="管理者パスワード">
-
-  <button id="csvBtn" class="success">📥 ランキングCSVをダウンロード</button>
-  <button id="deleteAllBtn" class="danger">🗑 ランキング全削除</button>
-
-  <div id="msg"></div>
+  <button id="login-btn">ログイン</button>
+  <div id="login-msg"></div>
 </div>
 
-<!-- 名前指定削除 -->
-<div class="box">
-  <h3>🔴 特定の名前を削除</h3>
-
-  <input id="delete-name" placeholder="削除する名前">
-  <button id="delete-by-name-btn" class="danger">この名前を削除</button>
-
-  <div id="delete-msg"></div>
+<!-- 管理画面 -->
+<div id="admin-area" style="display:none;">
+  <h2>ランキング一覧</h2>
+  <ul id="admin-ranking" style="list-style:none; padding:0;"></ul>
 </div>
-
-<!-- ランキング一覧 -->
-<div class="box">
-  <h3>📊 現在のランキング</h3>
-
-  <table>
-    <thead>
-      <tr>
-        <th>順位</th>
-        <th>名前</th>
-        <th>スコア</th>
-        <th>時間</th>
-      </tr>
-    </thead>
-    <tbody id="ranking-body">
-      <tr><td colspan="4">読み込み中...</td></tr>
-    </tbody>
-  </table>
-</div>
-
-<a href="index.html">← ホームへ戻る</a>
 
 <script>
-const passInput = document.getElementById("admin-pass");
-const msg = document.getElementById("msg");
+let adminPass = "";
 
 /* ===============================
-   CSV ダウンロード
+   ログイン
 =============================== */
-document.getElementById("csvBtn").onclick = () => {
-  const pass = passInput.value.trim();
-  if (!pass) {
-    msg.textContent = "パスワードを入力してください";
-    msg.style.color = "red";
-    return;
-  }
-  window.location.href =
-    `/api/admin/export/ranking?pass=${encodeURIComponent(pass)}`;
-};
+document.getElementById("login-btn").onclick = async () => {
+  const pass = document.getElementById("admin-pass").value;
+  if (!pass) return;
 
-/* ===============================
-   ランキング全削除
-=============================== */
-document.getElementById("deleteAllBtn").onclick = async () => {
-  const pass = passInput.value.trim();
-  if (!pass) {
-    msg.textContent = "パスワードを入力してください";
-    msg.style.color = "red";
-    return;
-  }
-
-  if (!confirm("本当にランキングを全削除しますか？")) return;
-
-  const res = await fetch("/api/admin/delete", {
+  const res = await fetch("/api/admin/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ pass })
   });
 
-  if (!res.ok) {
-    msg.textContent = "削除に失敗しました";
-    msg.style.color = "red";
-    return;
+  if (res.ok) {
+    adminPass = pass;
+    document.getElementById("login-area").style.display = "none";
+    document.getElementById("admin-area").style.display = "block";
+    loadAdminRanking();
+  } else {
+    document.getElementById("login-msg").textContent = "パスワードが違います";
   }
-
-  msg.textContent = "ランキングを全削除しました";
-  msg.style.color = "green";
-  loadRankingAdmin();
 };
 
 /* ===============================
-   名前指定削除
+   ランキング取得
 =============================== */
-document.getElementById("delete-by-name-btn").onclick = async () => {
-  const name = document.getElementById("delete-name").value.trim();
-  const pass = passInput.value.trim();
-  const msg2 = document.getElementById("delete-msg");
+async function loadAdminRanking() {
+  const list = document.getElementById("admin-ranking");
+  list.innerHTML = "<li>読み込み中...</li>";
 
-  if (!name || !pass) {
-    msg2.textContent = "名前とパスワードを入力してください";
-    return;
-  }
-
-  const res = await fetch("/api/admin/delete-by-name", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, pass })
-  });
-
-  if (!res.ok) {
-    msg2.textContent = "削除失敗（パスワード不正）";
-    return;
-  }
-
+  const res = await fetch("/api/ranking");
   const data = await res.json();
-  msg2.textContent = `「${name}」を ${data.deleted} 件削除しました`;
-  loadRankingAdmin();
-};
 
-/* ===============================
-   ランキング一覧取得
-=============================== */
-async function loadRankingAdmin() {
-  const tbody = document.getElementById("ranking-body");
+  list.innerHTML = "";
 
-  try {
-    const res = await fetch("/api/ranking");
-    const data = await res.json();
+  data.forEach(r => {
+    const li = document.createElement("li");
+    li.style.background = "#f1f1f1";
+    li.style.margin = "8px 0";
+    li.style.padding = "12px";
+    li.style.borderRadius = "10px";
 
-    tbody.innerHTML = "";
+    li.innerHTML = `
+      ${r.name} / ${r.score}点 / ${r.time ?? "-"}秒
+      <button style="margin-top:8px; background:#e74c3c;"
+        onclick="deleteEntry('${r.name}', ${r.score})">
+        削除
+      </button>
+    `;
 
-    if (!data.length) {
-      tbody.innerHTML =
-        `<tr><td colspan="4">ランキングなし</td></tr>`;
-      return;
-    }
-
-    data.forEach((r, i) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${i + 1}</td>
-        <td>${r.name}</td>
-        <td>${r.score}</td>
-        <td>${r.time ?? "-"}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch {
-    tbody.innerHTML =
-      `<tr><td colspan="4">取得エラー</td></tr>`;
-  }
+    list.appendChild(li);
+  });
 }
 
-/* 初期表示 */
-loadRankingAdmin();
+/* ===============================
+   削除
+=============================== */
+async function deleteEntry(name, score) {
+  if (!confirm(`${name} (${score}点) を削除しますか？`)) return;
+
+  const res = await fetch("/api/admin/delete-entry", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      pass: adminPass,
+      name,
+      score
+    })
+  });
+
+  const data = await res.json();
+
+  if (data.result === "deleted") {
+    alert("削除しました");
+    loadAdminRanking();
+  } else {
+    alert("削除できませんでした");
+  }
+}
 </script>
 
 </body>
