@@ -72,26 +72,37 @@ app.get("/api/words", async (req, res) => {
 });
 
 // ===============================
-// ランキング登録（重複防止）
+// ランキング登録（500エラー完全対策版）
 // ===============================
 app.post("/api/submit", async (req, res) => {
-  const { name, score, time } = req.body;
+  let { name, score, time } = req.body;
 
-  if (!name || typeof score !== "number") {
+  // 型を安全に補正
+  score = Number(score);
+  time = Number(time);
+
+  if (!name || Number.isNaN(score)) {
     return res.status(400).json({ error: "bad data" });
+  }
+
+  // time が NaN の場合は null にする
+  if (Number.isNaN(time)) {
+    time = null;
   }
 
   try {
     await pool.query(
-      `INSERT INTO ranking(name, score, time)
-       VALUES($1,$2,$3)
-       ON CONFLICT (name, score, time) DO NOTHING`,
+      `
+      INSERT INTO ranking(name, score, time)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (name, score, time) DO NOTHING
+      `,
       [name, score, time]
     );
 
     res.json({ result: "ok" });
   } catch (e) {
-    console.error(e);
+    console.error("❌ submit error:", e);
     res.status(500).json({ error: "submit error" });
   }
 });
@@ -243,3 +254,4 @@ app.get("/api/admin/export/miss", async (req, res) => {
 app.listen(PORT, () => {
   console.log("🚀 server running on", PORT);
 });
+
