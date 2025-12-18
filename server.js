@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 // ===============================
 // 設定
 // ===============================
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Kurage0805";
 
 // ===============================
 // PostgreSQL
@@ -209,3 +209,4 @@ app.post("/api/admin/reset", async (req, res) => {
 app.listen(PORT, () => {
   console.log("🚀 server running on", PORT);
 });
+
