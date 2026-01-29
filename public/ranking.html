@@ -26,7 +26,7 @@
 
 <!-- ここに Google フォームへのリンクを追加 -->
 <div id="feedback-area" style="margin-top:20px;">
-  <p>英単語アプリに関してのアンケートフォーム入力のご協力をお願いします：</p>
+  <p>英単語アプリに関してのアンケートフォーム入力をお願いします：</p>
   <p>
     <a id="google-form-link" href="https://docs.google.com/forms/d/e/1FAIpQLSfNTE5LrQXNPu_qzcGhbpjR7weBP-Zn5YmE10Ixr2x5DzUcqw/viewform?usp=header">
       Googleフォームで送る
@@ -35,6 +35,7 @@
 </div>
 
 <a href="game.html">← ゲームに戻る</a>
+<button id="to-index" style="margin-left:12px;">← トップに戻る</button>
 
 <script>
 /* ===============================
@@ -118,11 +119,14 @@ document.getElementById("register-btn").onclick = async () => {
   }
 };
 
+/* トップに戻るボタンの動作 */
+document.getElementById('to-index').addEventListener('click', () => {
+  window.location.href = 'index.html';
+});
+
 loadRanking();
 loadMyRank();
 </script>
 
 </body>
 </html>
-
-
