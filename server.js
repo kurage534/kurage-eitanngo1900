@@ -221,6 +221,34 @@ app.post("/api/admin/delete", async (req, res) => {
 });
 
 // ===============================
+// 管理者：ランキングの個別削除
+// ===============================
+app.post("/api/admin/delete-entry", async (req, res) => {
+  const ADMIN_PASS = process.env.ADMIN_PASS || "Kurage0805";
+
+  const { pass, name, score } = req.body;
+  if (pass !== ADMIN_PASS) {
+    return res.sendStatus(403);
+  }
+  if (!name || score === undefined) {
+    return res.status(400).json({ error: "bad request" });
+  }
+
+  try {
+    // score が文字列の場合に備えて数値に変換
+    const numericScore = Number(score);
+    await pool.query(
+      "DELETE FROM ranking WHERE name = $1 AND score = $2",
+      [name, numericScore]
+    );
+
+    res.json({ result: "deleted" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "delete error" });
+  }
+});
+// ===============================
 // 管理者：ランキングCSV
 // ===============================
 app.get("/api/admin/export/ranking", async (req, res) => {
@@ -272,3 +300,4 @@ app.get("/api/admin/export/miss", async (req, res) => {
 app.listen(PORT, () => {
   console.log("🚀 server running on", PORT);
 });
+
