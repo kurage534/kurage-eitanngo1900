@@ -28,7 +28,7 @@
 <div id="feedback-area" style="margin-top:20px;">
   <p>英単語アプリに関してのアンケートフォーム入力をお願いします：</p>
   <p>
-    <a id="google-form-link" href="https://docs.google.com/forms/d/e/1FAIpQLSfNTE5LrQXNPu_qzcGhbpjR7weBP-Zn5YmE10Ixr2x5DzUcqw/viewform?usp=header">
+    <a id="google-form-link" href="https://docs.google.com/forms/d/e/1FAIpQLSfNTE5LrQXNPu_qzcGhbpjR7weBP-Zn5YmE10Ixr2x5DzUcqw/viewform?usp=header" target="_blank" rel="noopener noreferrer">
       Googleフォームで送る
     </a>
   </p>
@@ -37,96 +37,6 @@
 <a href="game.html">← ゲームに戻る</a>
 <button id="to-index" style="margin-left:12px;">← トップに戻る</button>
 
-<script>
-/* ===============================
-   ランキング表示
-=============================== */
-async function loadRanking() {
-  const list = document.getElementById("ranking-list");
-  list.innerHTML = "<li>読み込み中...</li>";
-
-  try {
-    const res = await fetch("/api/ranking");
-    const data = await res.json();
-
-    list.innerHTML = "";
-    if (!data.length) {
-      list.innerHTML = "<li>まだ登録がありません</li>";
-      return;
-    }
-
-    data.forEach((r, i) => {
-      const li = document.createElement("li");
-      li.textContent = `${i + 1}位 ${r.name} ${r.score}点 ${r.time ?? "-"}秒`;
-      list.appendChild(li);
-    });
-  } catch {
-    list.innerHTML = "<li>取得失敗</li>";
-  }
-}
-
-/* ===============================
-   自分の順位
-=============================== */
-async function loadMyRank() {
-  const name = localStorage.getItem("playerName");
-  const score = localStorage.getItem("score");
-  const time = localStorage.getItem("time");
-  if (!name || !score) return;
-
-  const res = await fetch(
-    `/api/my-rank?name=${encodeURIComponent(name)}&score=${score}&time=${time}`
-  );
-  const data = await res.json();
-
-  const box = document.getElementById("my-rank");
-  box.style.display = "block";
-  box.textContent = `🎉 あなたの順位：${data.rank} 位`;
-}
-
-/* ===============================
-   ランキング登録
-=============================== */
-if (localStorage.getItem("CAN_REGISTER") === "YES") {
-  document.getElementById("register-area").style.display = "block";
-}
-
-document.getElementById("register-btn").onclick = async () => {
-  const name = document.getElementById("player-name").value.trim();
-  const score = Number(localStorage.getItem("score"));
-  const time = Number(localStorage.getItem("time"));
-
-  if (!name) {
-    document.getElementById("register-msg").textContent = "名前を入力してください";
-    return;
-  }
-
-  const res = await fetch("/api/submit", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, score, time })
-  });
-
-  const data = await res.json();
-  if (data.result === "ok") {
-    localStorage.setItem("playerName", name);
-    localStorage.removeItem("CAN_REGISTER");
-    document.getElementById("register-area").style.display = "none";
-    loadRanking();
-    loadMyRank();
-  } else {
-    document.getElementById("register-msg").textContent = "登録失敗";
-  }
-};
-
-/* トップに戻るボタンの動作 */
-document.getElementById('to-index').addEventListener('click', () => {
-  window.location.href = 'index.html';
-});
-
-loadRanking();
-loadMyRank();
-</script>
-
+<script src="ranking.js"></script>
 </body>
 </html>
